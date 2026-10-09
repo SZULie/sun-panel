@@ -134,7 +134,10 @@ def patch_frontend(web_dir):
                 # 2. Patch index-Dca3OcbT.js (Store and base config)
                 if 'function Nc(){return{' in content:
                     content = content.replace('function Nc(){return{', 'function Nc(){return{cardOpenTarget:"blank",')
-                    print(f"Added default cardOpenTarget in {fname}")
+                    # Add i18n
+                    content = content.replace('cardStyle:"卡片风格",', 'cardStyle:"卡片风格",cardOpenTarget:"点击卡片打开方式",openBlank:"新建标签页打开",openSelf:"当前页直接跳转",')
+                    content = content.replace('"cardStyle":"Card style",', '"cardStyle":"Card style","cardOpenTarget":"Card click action","openBlank":"Open in new tab","openSelf":"Direct jump in current page",')
+                    print(f"Added default cardOpenTarget and i18n in {fname}")
 
                 target_expired = 'const e=de(!0);async function t(){try{const{data:o}=await sb();e.value=o.isExpired}catch{}}return t(),{proIsExpired:e}'
                 if target_expired in content:
@@ -144,9 +147,15 @@ def patch_frontend(web_dir):
                 # 3. Patch index-DFgaO5ar.js (Style Settings Component)
                 target_style = 'r("div",ea,[r("div",null,v(t(k)("apps.itemGroupManage.cardStyle")),1),r("div",ta,[c(t(rt),{value:t(a).panelConfig.iconStyle,"onUpdate:value":d[12]||(d[12]=i=>t(a).panelConfig.iconStyle=i),size:"small",options:L},null,8,["value"])])])'
                 if target_style in content:
-                    addition = ',r("div",{class:"flex items-center mt-[10px]"},[r("div",null,"点击卡片打开方式",1),r("div",ta,[c(t(rt),{value:t(a).panelConfig.cardOpenTarget||"blank","onUpdate:value":d[35]||(d[35]=i=>t(a).panelConfig.cardOpenTarget=i),size:"small",options:[{label:"新建标签页打开",value:"blank"},{label:"当前页直接跳转",value:"self"}]},null,8,["value"])])])'
+                    old_L = 'L=[{label:k("apps.baseSettings.detailIcon"),value:st.info},{label:k("apps.baseSettings.smallIcon"),value:st.icon}],'
+                    new_L = old_L + 'otOpt=[{label:k("apps.itemGroupManage.openBlank"),value:"blank"},{label:k("apps.itemGroupManage.openSelf"),value:"self"}],'
+                    if old_L in content:
+                        content = content.replace(old_L, new_L)
+                        addition = ',r("div",{class:"flex items-center mt-[10px]"},[r("div",null,v(t(k)("apps.itemGroupManage.cardOpenTarget")),1),r("div",ta,[c(t(rt),{value:t(a).panelConfig.cardOpenTarget||"blank","onUpdate:value":d[35]||(d[35]=i=>t(a).panelConfig.cardOpenTarget=i),size:"small",options:otOpt},null,8,["value"])])])'
+                    else:
+                        addition = ',r("div",{class:"flex items-center mt-[10px]"},[r("div",null,"点击卡片打开方式",1),r("div",ta,[c(t(rt),{value:t(a).panelConfig.cardOpenTarget||"blank","onUpdate:value":d[35]||(d[35]=i=>t(a).panelConfig.cardOpenTarget=i),size:"small",options:[{label:"新建标签页打开",value:"blank"},{label:"当前页直接跳转",value:"self"}]},null,8,["value"])])])'
                     content = content.replace(target_style, target_style + addition)
-                    print(f"Injected cardOpenTarget setting in Style Settings {fname}")
+                    print(f"Injected cardOpenTarget setting with i18n in Style Settings {fname}")
 
                 # 4. Patch index-C9Kg_QMv.js (Card click handlers, search filter, Pro drawer & badges)
                 s1 = 'function x(A,J){'
