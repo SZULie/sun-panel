@@ -166,9 +166,9 @@ def patch_frontend(web_dir):
                     content = content.replace(target_pro_drawer, '')
                     print(f"Removed ProAuth from drawer menu in {fname}")
 
-                target_pro_badge = 'return(a,u)=>s(r).hideProBadge?Te("",!0):'
+                target_pro_badge = 's(r).hideProBadge?'
                 if target_pro_badge in content:
-                    content = content.replace(target_pro_badge, 'return(a,u)=>Te("",!0):')
+                    content = content.replace(target_pro_badge, 'true?')
                     print(f"Neutralized ProBadge component in {fname}")
 
                 target_sb_warn = 'w(s(ra),{"show-icon":"",content:s(X)("deskModule.searchBox.noProAuth"),class:"ml-2"},null,8,["content"])'
