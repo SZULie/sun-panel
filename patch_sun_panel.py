@@ -146,6 +146,15 @@ def patch_frontend(web_dir):
                     new_content = new_content.replace(s2, r2)
                     print(f"Hooked card openMethod handler (SmallCard/DockerCard) in {fname}")
 
+                # 3. Hook searchBox item search to support Pinyin & Enhanced Search
+                idx_filter = new_content.find('Pe.filter(wt=>{var $t;return wt.title.toLowerCase()')
+                if idx_filter != -1:
+                    end_filter = new_content.find(';Ae&&', idx_filter)
+                    if end_filter != -1:
+                        rep_filter = 'Pe.filter(wt=>{var $t;return window.__matchSearch?window.__matchSearch(wt,ve):(wt.title.toLowerCase().includes((ve==null?void 0:ve.toLowerCase())??"")||wt.url.toLowerCase().includes((ve==null?void 0:ve.toLowerCase())??"")||(($t=wt.description)==null?void 0:$t.toLowerCase().includes((ve==null?void 0:ve.toLowerCase())??"")))})'
+                        new_content = new_content[:idx_filter] + rep_filter + new_content[end_filter:]
+                        print(f"Hooked searchBox item filter for Pinyin support in {fname}")
+
                 if len(new_content) != orig_len or new_content != content:
                     with open(fpath, 'w', encoding='utf-8') as f:
                         f.write(new_content)
