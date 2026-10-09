@@ -1,5 +1,35 @@
-// Custom Node Name & Order Manager for Sun-Panel
+// Custom Node Name & Order Manager & Global Open Target Toggle for Sun-Panel
 (function() {
+  // 1. Hook window.open fallback for 'self' mode
+  const originalWindowOpen = window.open;
+  window.open = function(url, target, features) {
+    const mode = localStorage.getItem('sun_panel_open_target');
+    if (mode === 'self' && url && typeof url === 'string' && !url.startsWith('javascript:')) {
+      window.location.href = url;
+      return window;
+    }
+    return originalWindowOpen.call(window, url, target, features);
+  };
+
+  // Toast notification helper
+  function showToast(msg) {
+    let toast = document.getElementById('custom-toast-msg');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'custom-toast-msg';
+      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(30,30,38,0.95);border:1px solid #4a4a5a;color:#fff;padding:10px 20px;border-radius:24px;font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:999999;transition:opacity 0.3s,transform 0.3s;pointer-events:none;backdrop-filter:blur(6px);';
+      document.body.appendChild(toast);
+    }
+    toast.innerText = msg;
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(-50%) translateY(0)';
+    clearTimeout(toast.__timer);
+    toast.__timer = setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(-50%) translateY(10px)';
+    }, 2200);
+  }
+
   function getAuthToken() {
     try {
       const raw = localStorage.getItem('AUTH_TOKEN');
@@ -21,6 +51,45 @@
       }
     } catch(e) {}
     return null;
+  }
+
+  // 2. Inject Open Target Toggle into Top Floating Dock
+  function injectOpenTargetToggle() {
+    const dock = document.querySelector('.fixed-element');
+    if (!dock) return;
+
+    if (dock.querySelector('.custom-open-target-btn')) return;
+
+    const currentMode = localStorage.getItem('sun_panel_open_target') || 'blank';
+
+    const btn = document.createElement('div');
+    btn.className = 'custom-open-target-btn float-btn flex items-center justify-center cursor-pointer';
+    btn.style.margin = '0 2px';
+    btn.style.transition = 'all 0.2s';
+
+    function updateBtnVisual(mode) {
+      if (mode === 'self') {
+        btn.title = '卡片打开方式：直接跳转 (点击切换为新建标签页)';
+        btn.innerHTML = '<span style="font-size:12px;font-weight:700;color:#60a5fa;display:inline-flex;align-items:center;padding:2px 4px;border:1px solid #3b82f6;border-radius:4px;line-height:1;">当前页</span>';
+      } else {
+        btn.title = '卡片打开方式：新建标签页 (点击切换为直接跳转)';
+        btn.innerHTML = '<span style="font-size:12px;font-weight:700;color:#34d399;display:inline-flex;align-items:center;padding:2px 4px;border:1px solid #10b981;border-radius:4px;line-height:1;">新标签</span>';
+      }
+    }
+
+    updateBtnVisual(currentMode);
+
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const oldMode = localStorage.getItem('sun_panel_open_target') || 'blank';
+      const newMode = (oldMode === 'blank') ? 'self' : 'blank';
+      localStorage.setItem('sun_panel_open_target', newMode);
+      updateBtnVisual(newMode);
+      showToast(newMode === 'self' ? '已切换为：点击卡片在当前页直接跳转' : '已切换为：点击卡片在新建标签页打开');
+    };
+
+    // Prepend to dock or insert before settings button
+    dock.insertBefore(btn, dock.firstChild);
   }
 
   async function fetchGroups(token) {
@@ -111,6 +180,8 @@
 
     if (document.getElementById('custom-sort-modal-overlay')) return;
 
+    const currentMode = localStorage.getItem('sun_panel_open_target') || 'blank';
+
     // Create Modal Elements
     const overlay = document.createElement('div');
     overlay.id = 'custom-sort-modal-overlay';
@@ -121,11 +192,22 @@
 
     const header = document.createElement('div');
     header.style.cssText = 'padding:16px 20px;border-bottom:1px solid #333340;display:flex;justify-content:space-between;align-items:center;';
-    header.innerHTML = '<span style="font-size:17px;font-weight:700;">调整节点显示顺序</span><span id="custom-modal-close" style="cursor:pointer;font-size:20px;opacity:0.7;padding:4px 8px;">✕</span>';
+    header.innerHTML = '<span style="font-size:17px;font-weight:700;">节点与偏好设置</span><span id="custom-modal-close" style="cursor:pointer;font-size:20px;opacity:0.7;padding:4px 8px;">✕</span>';
+
+    // Open target setting row
+    const settingRow = document.createElement('div');
+    settingRow.style.cssText = 'padding:12px 18px;background:#24242f;border-bottom:1px solid #333340;display:flex;align-items:center;justify-content:space-between;';
+    settingRow.innerHTML = `
+      <span style="font-size:14px;font-weight:600;">点击卡片打开方式</span>
+      <div style="display:flex;gap:6px;">
+        <button id="custom-opt-blank" style="padding:4px 10px;border-radius:6px;border:1px solid ${currentMode==='blank'?'#10b981':'#444'};background:${currentMode==='blank'?'#10b981':'#2a2a36'};color:#fff;font-size:12px;cursor:pointer;">新标签页</button>
+        <button id="custom-opt-self" style="padding:4px 10px;border-radius:6px;border:1px solid ${currentMode==='self'?'#3b82f6':'#444'};background:${currentMode==='self'?'#3b82f6':'#2a2a36'};color:#fff;font-size:12px;cursor:pointer;">直接跳转</button>
+      </div>
+    `;
 
     const listContainer = document.createElement('div');
     listContainer.id = 'custom-modal-list';
-    listContainer.style.cssText = 'padding:14px 16px;max-height:60vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;';
+    listContainer.style.cssText = 'padding:14px 16px;max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;';
     listContainer.innerHTML = '<div style="text-align:center;color:#888;padding:20px 0;">加载节点中...</div>';
 
     const footer = document.createElement('div');
@@ -133,10 +215,46 @@
     footer.innerHTML = '<button id="custom-modal-cancel" style="padding:8px 16px;border-radius:8px;background:#2c2c36;color:#ccc;border:none;cursor:pointer;font-size:14px;">取消</button><button id="custom-modal-save" style="padding:8px 18px;border-radius:8px;background:#3b82f6;color:#fff;border:none;cursor:pointer;font-weight:600;font-size:14px;">保存新顺序</button>';
 
     modal.appendChild(header);
+    modal.appendChild(settingRow);
     modal.appendChild(listContainer);
     modal.appendChild(footer);
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
+
+    // Bind open target buttons inside modal
+    let selectedMode = currentMode;
+    const btnBlank = document.getElementById('custom-opt-blank');
+    const btnSelf = document.getElementById('custom-opt-self');
+
+    btnBlank.onclick = () => {
+      selectedMode = 'blank';
+      btnBlank.style.borderColor = '#10b981';
+      btnBlank.style.background = '#10b981';
+      btnSelf.style.borderColor = '#444';
+      btnSelf.style.background = '#2a2a36';
+      localStorage.setItem('sun_panel_open_target', 'blank');
+      showToast('已设为：在新建标签页打开');
+      const toggle = document.querySelector('.custom-open-target-btn');
+      if (toggle) {
+        toggle.title = '卡片打开方式：新建标签页 (点击切换为直接跳转)';
+        toggle.innerHTML = '<span style="font-size:12px;font-weight:700;color:#34d399;display:inline-flex;align-items:center;padding:2px 4px;border:1px solid #10b981;border-radius:4px;line-height:1;">新标签</span>';
+      }
+    };
+
+    btnSelf.onclick = () => {
+      selectedMode = 'self';
+      btnSelf.style.borderColor = '#3b82f6';
+      btnSelf.style.background = '#3b82f6';
+      btnBlank.style.borderColor = '#444';
+      btnBlank.style.background = '#2a2a36';
+      localStorage.setItem('sun_panel_open_target', 'self');
+      showToast('已设为：在当前页直接跳转');
+      const toggle = document.querySelector('.custom-open-target-btn');
+      if (toggle) {
+        toggle.title = '卡片打开方式：直接跳转 (点击切换为新建标签页)';
+        toggle.innerHTML = '<span style="font-size:12px;font-weight:700;color:#60a5fa;display:inline-flex;align-items:center;padding:2px 4px;border:1px solid #3b82f6;border-radius:4px;line-height:1;">当前页</span>';
+      }
+    };
 
     let currentList = [];
 
@@ -228,6 +346,10 @@
   }
 
   function injectEditButtons() {
+    // 1. Inject open target toggle in floating dock
+    injectOpenTargetToggle();
+
+    // 2. Inject group edit buttons
     const groupDivs = document.querySelectorAll('div[id^="item-group-"]');
     if (!groupDivs.length) return;
 
@@ -319,7 +441,7 @@
       // 4. Sort Modal Button
       const modalBtn = createBtn(
         '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>',
-        '节点排序管理窗口',
+        '节点排序与全局设置窗口',
         () => openSortModal()
       );
 

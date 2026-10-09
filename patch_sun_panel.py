@@ -100,8 +100,6 @@ def patch_backend(src_path, dst_path):
             print(f"Patched {sym} via pattern at {hex(offset)}")
 
     # 4. openness.ProIsExpired hideProBadge return value:
-    # Pattern around 0x82799f: 48 8b 54 24 48 0f b6 12 88 54 24 36
-    # Change 0f b6 12 (movzbl (%rdx), %edx) to b2 01 90 (mov $1, %dl; nop)
     pat_open = bytes.fromhex('48 8b 54 24 48 0f b6 12 88 54 24 36')
     offset_open = data.find(pat_open)
     if offset_open != -1:
@@ -131,14 +129,26 @@ def patch_frontend(web_dir):
                     content = f.read()
 
                 orig_len = len(content)
-                # Remove PRO text badge on backup / restore
+                # 1. Remove PRO text badge on backup / restore buttons
                 new_content = content.replace('text:"PRO"', 'text:""')
                 new_content = new_content.replace('text:"PRO授权"', 'text:""')
+
+                # 2. Add global open-target support to card opening handlers in index-C9Kg_QMv.js
+                s1 = 'function x(A,J){switch(A){'
+                r1 = 'function x(A,J){const _t=localStorage.getItem("sun_panel_open_target");if(_t==="self")A=1;else if(_t==="blank")A=2;switch(A){'
+                if s1 in new_content:
+                    new_content = new_content.replace(s1, r1)
+                    print(f"Hooked card openMethod handler (NormalCard) in {fname}")
+
+                s2 = 'function Me(te,Se){switch(te){'
+                r2 = 'function Me(te,Se){const _t=localStorage.getItem("sun_panel_open_target");if(_t==="self")te=1;else if(_t==="blank")te=2;switch(te){'
+                if s2 in new_content:
+                    new_content = new_content.replace(s2, r2)
+                    print(f"Hooked card openMethod handler (SmallCard/DockerCard) in {fname}")
 
                 if len(new_content) != orig_len or new_content != content:
                     with open(fpath, 'w', encoding='utf-8') as f:
                         f.write(new_content)
-                    print(f"Patched frontend file: {fname}")
                     count += 1
     print(f"Patched {count} frontend asset files")
 
