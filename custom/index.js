@@ -53,6 +53,62 @@
     return null;
   }
 
+  // Cloud sync helper for open target preference
+  async function syncOpenTargetToServer(token, targetMode) {
+    if (!token) return;
+    try {
+      const res = await fetch('/api/panel/userConfig/get', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'token': token },
+        body: JSON.stringify({})
+      });
+      const json = await res.json();
+      if (json.code === 0 && json.data) {
+        const cfg = json.data;
+        if (!cfg.panel) cfg.panel = {};
+        cfg.panel.cardOpenTarget = targetMode;
+        await fetch('/api/panel/userConfig/set', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'token': token },
+          body: JSON.stringify(cfg)
+        });
+      }
+    } catch(e) {
+      console.error('Sync open target to server failed:', e);
+    }
+  }
+
+  // Initial load from cloud if localStorage not set
+  (async function initFromCloud() {
+    const local = localStorage.getItem('sun_panel_open_target');
+    const token = getAuthToken();
+    if (!local && token) {
+      try {
+        const res = await fetch('/api/panel/userConfig/get', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'token': token },
+          body: JSON.stringify({})
+        });
+        const json = await res.json();
+        if (json.code === 0 && json.data && json.data.panel && json.data.panel.cardOpenTarget) {
+          localStorage.setItem('sun_panel_open_target', json.data.panel.cardOpenTarget);
+          const toggle = document.querySelector('.custom-open-target-btn');
+          if (toggle) updateToggleVisual(toggle, json.data.panel.cardOpenTarget);
+        }
+      } catch(e) {}
+    }
+  })();
+
+  function updateToggleVisual(btn, mode) {
+    if (mode === 'self') {
+      btn.title = '卡片打开方式：当前页直接跳转 (点击切换为新建标签页)';
+      btn.innerHTML = '<span class="custom-open-target-badge custom-open-target-self">当前页</span>';
+    } else {
+      btn.title = '卡片打开方式：新建标签页 (点击切换为当前页跳转)';
+      btn.innerHTML = '<span class="custom-open-target-badge custom-open-target-blank">新标签</span>';
+    }
+  }
+
   // 2. Inject Open Target Toggle into Top Floating Dock
   function injectOpenTargetToggle() {
     const dock = document.querySelector('.fixed-element');
@@ -67,28 +123,20 @@
     btn.style.margin = '0 2px';
     btn.style.transition = 'all 0.2s';
 
-    function updateBtnVisual(mode) {
-      if (mode === 'self') {
-        btn.title = '卡片打开方式：当前页直接跳转 (点击切换为新建标签页)';
-        btn.innerHTML = '<span class="custom-open-target-badge custom-open-target-self">当前页</span>';
-      } else {
-        btn.title = '卡片打开方式：新建标签页 (点击切换为当前页跳转)';
-        btn.innerHTML = '<span class="custom-open-target-badge custom-open-target-blank">新标签</span>';
-      }
-    }
-
-    updateBtnVisual(currentMode);
+    updateToggleVisual(btn, currentMode);
 
     btn.onclick = (e) => {
       e.stopPropagation();
       const oldMode = localStorage.getItem('sun_panel_open_target') || 'blank';
       const newMode = (oldMode === 'blank') ? 'self' : 'blank';
       localStorage.setItem('sun_panel_open_target', newMode);
-      updateBtnVisual(newMode);
-      showToast(newMode === 'self' ? '已切换为：点击卡片在当前页直接跳转' : '已切换为：点击卡片在新建标签页打开');
+      updateToggleVisual(btn, newMode);
+      showToast(newMode === 'self' ? '已设为：点击卡片在当前页直接跳转' : '已设为：点击卡片在新建标签页打开');
+      
+      const token = getAuthToken();
+      if (token) syncOpenTargetToServer(token, newMode);
     };
 
-    // Prepend to dock or insert before settings button
     dock.insertBefore(btn, dock.firstChild);
   }
 
@@ -182,7 +230,6 @@
 
     const currentMode = localStorage.getItem('sun_panel_open_target') || 'blank';
 
-    // Create Modal Elements
     const overlay = document.createElement('div');
     overlay.id = 'custom-sort-modal-overlay';
     overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.65);backdrop-filter:blur(5px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;';
@@ -194,7 +241,6 @@
     header.style.cssText = 'padding:16px 20px;border-bottom:1px solid #333340;display:flex;justify-content:space-between;align-items:center;';
     header.innerHTML = '<span style="font-size:17px;font-weight:700;">节点与偏好设置</span><span id="custom-modal-close" style="cursor:pointer;font-size:20px;opacity:0.7;padding:4px 8px;">✕</span>';
 
-    // Open target setting row
     const settingRow = document.createElement('div');
     settingRow.style.cssText = 'padding:12px 18px;background:#24242f;border-bottom:1px solid #333340;display:flex;align-items:center;justify-content:space-between;';
     settingRow.innerHTML = `
@@ -221,13 +267,10 @@
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
-    // Bind open target buttons inside modal
-    let selectedMode = currentMode;
     const btnBlank = document.getElementById('custom-opt-blank');
     const btnSelf = document.getElementById('custom-opt-self');
 
     btnBlank.onclick = () => {
-      selectedMode = 'blank';
       btnBlank.style.borderColor = '#10b981';
       btnBlank.style.background = '#10b981';
       btnSelf.style.borderColor = '#444';
@@ -235,14 +278,11 @@
       localStorage.setItem('sun_panel_open_target', 'blank');
       showToast('已设为：在新建标签页打开');
       const toggle = document.querySelector('.custom-open-target-btn');
-      if (toggle) {
-        toggle.title = '卡片打开方式：新建标签页 (点击切换为当前页跳转)';
-        toggle.innerHTML = '<span class="custom-open-target-badge custom-open-target-blank">新标签</span>';
-      }
+      if (toggle) updateToggleVisual(toggle, 'blank');
+      syncOpenTargetToServer(token, 'blank');
     };
 
     btnSelf.onclick = () => {
-      selectedMode = 'self';
       btnSelf.style.borderColor = '#3b82f6';
       btnSelf.style.background = '#3b82f6';
       btnBlank.style.borderColor = '#444';
@@ -250,10 +290,8 @@
       localStorage.setItem('sun_panel_open_target', 'self');
       showToast('已设为：在当前页直接跳转');
       const toggle = document.querySelector('.custom-open-target-btn');
-      if (toggle) {
-        toggle.title = '卡片打开方式：当前页直接跳转 (点击切换为新建标签页)';
-        toggle.innerHTML = '<span class="custom-open-target-badge custom-open-target-self">当前页</span>';
-      }
+      if (toggle) updateToggleVisual(toggle, 'self');
+      syncOpenTargetToServer(token, 'self');
     };
 
     let currentList = [];
@@ -346,10 +384,8 @@
   }
 
   function injectEditButtons() {
-    // 1. Inject open target toggle in floating dock
     injectOpenTargetToggle();
 
-    // 2. Inject group edit buttons
     const groupDivs = document.querySelectorAll('div[id^="item-group-"]');
     if (!groupDivs.length) return;
 
