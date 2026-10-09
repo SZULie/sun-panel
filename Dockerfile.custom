@@ -1,0 +1,26 @@
+# Sun-Panel Custom Edition (Unlocked PRO & Enhanced Node Controls)
+# Fork maintained by SZULie
+FROM hslr/sun-panel:latest AS base
+
+FROM alpine:latest AS builder
+RUN apk add --no-cache python3
+WORKDIR /build
+
+COPY patch_sun_panel.py /build/
+COPY --from=base /app/sun-panel /build/sun-panel
+COPY --from=base /app/web /build/web
+
+RUN python3 /build/patch_sun_panel.py /build/sun-panel /build/sun-panel-unlocked /build/web
+
+FROM hslr/sun-panel:latest
+
+COPY --from=builder /build/sun-panel-unlocked /app/sun-panel
+COPY --from=builder /build/web /app/web
+COPY custom/ /app/web/custom/
+COPY custom/ /app/conf/custom/
+
+RUN chmod +x /app/sun-panel
+
+EXPOSE 3002
+
+CMD ["./sun-panel"]
