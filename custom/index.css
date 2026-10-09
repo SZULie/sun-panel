@@ -55,3 +55,19 @@
   background: rgba(255, 255, 255, 0.15);
   transform: scale(1.1);
 }
+
+/* Mobile Optimization for Touchscreens & Narrow Screens */
+@media (max-width: 768px) {
+  .group-buttons {
+    opacity: 0.92 !important;
+  }
+  .custom-edit-group-btn {
+    width: 26px;
+    height: 26px;
+    margin-right: 2px !important;
+  }
+  .custom-open-target-btn {
+    width: 38px;
+    height: 38px;
+  }
+}
