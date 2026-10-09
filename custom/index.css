@@ -1,6 +1,49 @@
 /* Custom Styles for Sun-Panel (Maintained by SZULie) */
 
-/* Edit Group Buttons */
+/* View Mode vs Edit Mode */
+body:not(.edit-mode) .group-buttons,
+body.view-mode .group-buttons {
+  display: none !important;
+}
+
+body.edit-mode .group-buttons {
+  display: flex !important;
+  opacity: 0.85 !important;
+  transition: opacity 0.2s ease-in-out;
+}
+
+body.edit-mode .group-buttons:hover {
+  opacity: 1 !important;
+}
+
+/* Edit / View Mode Toggle Button in Floating Dock */
+.custom-mode-toggle-btn {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.25s ease-in-out;
+  user-select: none;
+  margin: 0 1px;
+}
+
+.custom-mode-toggle-btn:hover {
+  background-color: rgba(169, 169, 169, 0.45);
+}
+
+.custom-mode-toggle-btn.is-editing {
+  background: rgba(16, 185, 129, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.6);
+}
+
+.custom-mode-toggle-btn.is-editing:hover {
+  background: rgba(16, 185, 129, 0.35);
+}
+
+/* Group Action Buttons (Rename, Up, Down, Sort Modal) */
 .custom-edit-group-btn {
   display: inline-flex;
   align-items: center;
@@ -13,14 +56,15 @@
 }
 
 .custom-edit-group-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.18);
+  transform: scale(1.12);
 }
 
-/* Mobile Optimization for Touchscreens & Narrow Screens */
+/* Mobile Narrow Screens Optimization */
 @media (max-width: 768px) {
-  .group-buttons {
-    opacity: 0.92 !important;
+  .custom-mode-toggle-btn {
+    width: 38px;
+    height: 38px;
   }
   .custom-edit-group-btn {
     width: 26px;
