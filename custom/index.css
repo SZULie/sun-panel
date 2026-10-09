@@ -1,0 +1,57 @@
+/* Custom Styles for Sun-Panel */
+
+.custom-open-target-btn {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.3s, transform 0.15s;
+  user-select: none;
+}
+
+.custom-open-target-btn:hover {
+  background-color: rgba(169, 169, 169, 0.45);
+}
+
+.custom-open-target-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 5px;
+  border-radius: 5px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  letter-spacing: 0.5px;
+}
+
+.custom-open-target-blank {
+  color: #34d399;
+  border: 1px solid #10b981;
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.custom-open-target-self {
+  color: #60a5fa;
+  border: 1px solid #3b82f6;
+  background: rgba(59, 130, 246, 0.15);
+}
+
+/* Edit Group Buttons */
+.custom-edit-group-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.custom-edit-group-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(1.1);
+}

@@ -69,11 +69,11 @@
 
     function updateBtnVisual(mode) {
       if (mode === 'self') {
-        btn.title = '卡片打开方式：直接跳转 (点击切换为新建标签页)';
-        btn.innerHTML = '<span style="font-size:12px;font-weight:700;color:#60a5fa;display:inline-flex;align-items:center;padding:2px 4px;border:1px solid #3b82f6;border-radius:4px;line-height:1;">当前页</span>';
+        btn.title = '卡片打开方式：当前页直接跳转 (点击切换为新建标签页)';
+        btn.innerHTML = '<span class="custom-open-target-badge custom-open-target-self">当前页</span>';
       } else {
-        btn.title = '卡片打开方式：新建标签页 (点击切换为直接跳转)';
-        btn.innerHTML = '<span style="font-size:12px;font-weight:700;color:#34d399;display:inline-flex;align-items:center;padding:2px 4px;border:1px solid #10b981;border-radius:4px;line-height:1;">新标签</span>';
+        btn.title = '卡片打开方式：新建标签页 (点击切换为当前页跳转)';
+        btn.innerHTML = '<span class="custom-open-target-badge custom-open-target-blank">新标签</span>';
       }
     }
 
@@ -236,8 +236,8 @@
       showToast('已设为：在新建标签页打开');
       const toggle = document.querySelector('.custom-open-target-btn');
       if (toggle) {
-        toggle.title = '卡片打开方式：新建标签页 (点击切换为直接跳转)';
-        toggle.innerHTML = '<span style="font-size:12px;font-weight:700;color:#34d399;display:inline-flex;align-items:center;padding:2px 4px;border:1px solid #10b981;border-radius:4px;line-height:1;">新标签</span>';
+        toggle.title = '卡片打开方式：新建标签页 (点击切换为当前页跳转)';
+        toggle.innerHTML = '<span class="custom-open-target-badge custom-open-target-blank">新标签</span>';
       }
     };
 
@@ -251,8 +251,8 @@
       showToast('已设为：在当前页直接跳转');
       const toggle = document.querySelector('.custom-open-target-btn');
       if (toggle) {
-        toggle.title = '卡片打开方式：直接跳转 (点击切换为新建标签页)';
-        toggle.innerHTML = '<span style="font-size:12px;font-weight:700;color:#60a5fa;display:inline-flex;align-items:center;padding:2px 4px;border:1px solid #3b82f6;border-radius:4px;line-height:1;">当前页</span>';
+        toggle.title = '卡片打开方式：当前页直接跳转 (点击切换为新建标签页)';
+        toggle.innerHTML = '<span class="custom-open-target-badge custom-open-target-self">当前页</span>';
       }
     };
 
