@@ -22,7 +22,7 @@ def find_symbol(elf_path, sym_name):
     
     shstrtab = data[sections[e_shstrndx]['offset'] : sections[e_shstrndx]['offset'] + sections[e_shstrndx]['size']]
     def get_sh_name(idx):
-        return shstrtab[idx:shstrtab.find(b'\x00', idx)].decode('ascii', errors='ignore')
+        return shstrtab[idx:shstrtab.find(b'\x00', idx)].decode('ascii')
     
     symtab = None
     strtab = None
@@ -60,7 +60,6 @@ def patch_backend(src_path, dst_path):
         print(f"Found {sym} at {hex(addr)} (offset {hex(offset)})")
         data[offset:offset+3] = b'\x31\xc0\xc3'
     else:
-        print(f"WARNING: Symbol {sym} not found, searching pattern...")
         pattern = bytes.fromhex('49 3b 66 10 0f 86 6a 01 00 00 55 48 89 e5 48 83 ec 60')
         offset = data.find(pattern)
         if offset != -1:
@@ -105,8 +104,6 @@ def patch_backend(src_path, dst_path):
     if offset_open != -1:
         data[offset_open+5 : offset_open+8] = b'\xb2\x01\x90'
         print(f"Patched openness hideProBadge at {hex(offset_open)}")
-    else:
-        print("Notice: openness hideProBadge pattern not found, skipped")
 
     with open(dst_path, 'wb') as f:
         f.write(data)
@@ -129,35 +126,73 @@ def patch_frontend(web_dir):
                     content = f.read()
 
                 orig_len = len(content)
-                # 1. Remove PRO text badge on backup / restore buttons
-                new_content = content.replace('text:"PRO"', 'text:""')
-                new_content = new_content.replace('text:"PRO授权"', 'text:""')
 
-                # 2. Add global open-target support to card opening handlers in index-C9Kg_QMv.js
-                s1 = 'function x(A,J){switch(A){'
-                r1 = 'function x(A,J){const _t=localStorage.getItem("sun_panel_open_target");if(_t==="self")A=1;else if(_t==="blank")A=2;switch(A){'
-                if s1 in new_content:
-                    new_content = new_content.replace(s1, r1)
-                    print(f"Hooked card openMethod handler (NormalCard) in {fname}")
+                # 1. Remove PRO badges and text
+                content = content.replace('text:"PRO"', 'text:""')
+                content = content.replace('text:"PRO授权"', 'text:""')
 
-                s2 = 'function Me(te,Se){switch(te){'
-                r2 = 'function Me(te,Se){const _t=localStorage.getItem("sun_panel_open_target");if(_t==="self")te=1;else if(_t==="blank")te=2;switch(te){'
-                if s2 in new_content:
-                    new_content = new_content.replace(s2, r2)
-                    print(f"Hooked card openMethod handler (SmallCard/DockerCard) in {fname}")
+                # 2. Patch index-Dca3OcbT.js (Store and base config)
+                if 'function Nc(){return{' in content:
+                    content = content.replace('function Nc(){return{', 'function Nc(){return{cardOpenTarget:"blank",')
+                    print(f"Added default cardOpenTarget in {fname}")
 
-                # 3. Hook searchBox item search to support Pinyin & Enhanced Search
-                idx_filter = new_content.find('Pe.filter(wt=>{var $t;return wt.title.toLowerCase()')
+                target_expired = 'const e=de(!0);async function t(){try{const{data:o}=await sb();e.value=o.isExpired}catch{}}return t(),{proIsExpired:e}'
+                if target_expired in content:
+                    content = content.replace(target_expired, 'const e=de(!1);async function t(){try{e.value=!1}catch{}}return t(),{proIsExpired:e}')
+                    print(f"Neutralized proIsExpired store in {fname}")
+
+                # 3. Patch index-DFgaO5ar.js (Style Settings Component)
+                target_style = 'r("div",ea,[r("div",null,v(t(k)("apps.itemGroupManage.cardStyle")),1),r("div",ta,[c(t(rt),{value:t(a).panelConfig.iconStyle,"onUpdate:value":d[12]||(d[12]=i=>t(a).panelConfig.iconStyle=i),size:"small",options:L},null,8,["value"])])])'
+                if target_style in content:
+                    addition = ',r("div",{class:"flex items-center mt-[10px]"},[r("div",null,"点击卡片打开方式",1),r("div",ta,[c(t(rt),{value:t(a).panelConfig.cardOpenTarget||"blank","onUpdate:value":d[35]||(d[35]=i=>t(a).panelConfig.cardOpenTarget=i),size:"small",options:[{label:"新建标签页打开",value:"blank"},{label:"当前页直接跳转",value:"self"}]},null,8,["value"])])])'
+                    content = content.replace(target_style, target_style + addition)
+                    print(f"Injected cardOpenTarget setting in Style Settings {fname}")
+
+                # 4. Patch index-C9Kg_QMv.js (Card click handlers, search filter, Pro drawer & badges)
+                s1 = 'function x(A,J){'
+                r1 = 'function x(A,J){const _target=(r.panelConfig&&r.panelConfig.cardOpenTarget)||"blank";if(A!==3){if(_target==="self")A=1;else A=2}'
+                if s1 in content:
+                    content = content.replace(s1, r1)
+                    print(f"Hooked NormalCard click handler in {fname}")
+
+                s2 = 'function Me(te,Se){'
+                r2 = 'function Me(te,Se){const _target=(r.panelConfig&&r.panelConfig.cardOpenTarget)||"blank";if(te!==3){if(_target==="self")te=1;else te=2}'
+                if s2 in content:
+                    content = content.replace(s2, r2)
+                    print(f"Hooked SmallCard click handler in {fname}")
+
+                target_pro_drawer = ',{name:X("proAuth.appName"),componentName:"ProAuth",icon:"tabler:award",roles:[1]}'
+                if target_pro_drawer in content:
+                    content = content.replace(target_pro_drawer, '')
+                    print(f"Removed ProAuth from drawer menu in {fname}")
+
+                target_pro_badge = 'return(a,u)=>s(r).hideProBadge?Te("",!0):'
+                if target_pro_badge in content:
+                    content = content.replace(target_pro_badge, 'return(a,u)=>Te("",!0):')
+                    print(f"Neutralized ProBadge component in {fname}")
+
+                target_sb_warn = 'w(s(ra),{"show-icon":"",content:s(X)("deskModule.searchBox.noProAuth"),class:"ml-2"},null,8,["content"])'
+                if target_sb_warn in content:
+                    content = content.replace(target_sb_warn, 'Te("",!0)')
+                    print(f"Removed searchBox noProAuth warning in {fname}")
+
+                target_sb_lim = 'if(a.isExpired&&h.value.searchEngineList.length>=4)'
+                if target_sb_lim in content:
+                    content = content.replace(target_sb_lim, 'if(false)')
+                    print(f"Removed search engine count limit in {fname}")
+
+                # Search box pinyin match hook
+                idx_filter = content.find('Pe.filter(wt=>{var $t;return wt.title.toLowerCase()')
                 if idx_filter != -1:
-                    end_filter = new_content.find(';Ae&&', idx_filter)
+                    end_filter = content.find(';Ae&&', idx_filter)
                     if end_filter != -1:
                         rep_filter = 'Pe.filter(wt=>{var $t;return window.__matchSearch?window.__matchSearch(wt,ve):(wt.title.toLowerCase().includes((ve==null?void 0:ve.toLowerCase())??"")||wt.url.toLowerCase().includes((ve==null?void 0:ve.toLowerCase())??"")||(($t=wt.description)==null?void 0:$t.toLowerCase().includes((ve==null?void 0:ve.toLowerCase())??"")))})'
-                        new_content = new_content[:idx_filter] + rep_filter + new_content[end_filter:]
-                        print(f"Hooked searchBox item filter for Pinyin support in {fname}")
+                        content = content[:idx_filter] + rep_filter + content[end_filter:]
+                        print(f"Hooked searchBox item filter for Pinyin in {fname}")
 
-                if len(new_content) != orig_len or new_content != content:
+                if len(content) != orig_len:
                     with open(fpath, 'w', encoding='utf-8') as f:
-                        f.write(new_content)
+                        f.write(content)
                     count += 1
     print(f"Patched {count} frontend asset files")
 
