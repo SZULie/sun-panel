@@ -1,3 +1,27 @@
+# Sun-Panel (SZULie Custom Edition)
+
+> 💡 本仓库为 [Sun-Panel (hslr-s/sun-panel)](https://github.com/hslr-s/sun-panel) 的个人定制强化版本，由 **SZULie** 维护。
+
+## 🚀 特色功能与底层增强
+
+1. **彻底解锁全量 PRO 商业限制**：
+   - 汇编级解除 Go 后端授权校验（`ProIsExpired` / `TempAuthIsExpired` 永久有效）；
+   - 完全开放一键系统迁移、备份与恢复（无需任何商业授权码）；
+   - 解除图库上传限制、自定义 JS/CSS 限制；
+   - 抹除全站所有 PRO 推广角标、水印与未授权功能遮罩。
+2. **节点管理全量原生增强**：
+   - 支持节点名称可视化即时修改（✏️）；
+   - 支持节点单步上移/下移（⬆️/⬇️）；
+   - 内置半透明悬浮式【全局节点排序与设置管理窗口】（📑）。
+3. **卡片点击跳转偏好设置**：
+   - 支持全局自由选择【新标签页打开 (`_blank`)】或【当前页直接跳转 (`_self`)】；
+   - 右上角常驻悬浮控制栏提供实时状态切换胶囊（`[新标签]` / `[当前页]`）；
+   - 具备多设备本地记忆与云端自动同步机制。
+4. **自动化 CI/CD 流水线**：
+   - 配置 GitHub Actions 自动构建并发布至 GHCR (`ghcr.io/szulie/sun-panel:latest`)。
+
+---
+
 [[ 简体中文 ]](https://doc.sun-panel.top/zh_cn/) |
 [[ English ]](https://doc.sun-panel.top/)
 
