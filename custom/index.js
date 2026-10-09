@@ -2,6 +2,13 @@
 
 // Custom Node Name & Order Manager for Sun-Panel (Maintained by SZULie)
 (function() {
+    // Auto-cleanup stale ServiceWorkers if any were ever registered by browser PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(regs) {
+      regs.forEach(function(r) { r.unregister(); });
+    }).catch(function(){});
+  }
+
   // 0. Pinyin & Keyword Fuzzy Search Engine
   window.__matchSearch = function(item, query) {
     if (!query) return true;

@@ -3,6 +3,7 @@ import sys
 import os
 import struct
 import re
+import hashlib
 
 def find_symbol(elf_path, sym_name):
     with open(elf_path, 'rb') as f:
@@ -118,6 +119,8 @@ def patch_frontend(web_dir):
         return
 
     count = 0
+    patched_files = {}
+
     for root, _, files in os.walk(assets_dir):
         for fname in files:
             if fname.endswith('.js'):
@@ -125,7 +128,7 @@ def patch_frontend(web_dir):
                 with open(fpath, 'r', encoding='utf-8', errors='ignore') as f:
                     content = f.read()
 
-                orig_len = len(content)
+                orig_content = content
 
                 # 1. Remove PRO badges and text
                 content = content.replace('text:"PRO"', 'text:""')
@@ -199,11 +202,73 @@ def patch_frontend(web_dir):
                         content = content[:idx_filter] + rep_filter + content[end_filter:]
                         print(f"Hooked searchBox item filter for Pinyin in {fname}")
 
-                if len(content) != orig_len:
+                if content != orig_content:
                     with open(fpath, 'w', encoding='utf-8') as f:
                         f.write(content)
+                    patched_files[fname] = content
                     count += 1
+
     print(f"Patched {count} frontend asset files")
+
+    # 5. CONTENT-HASH-BUSTING: Rename patched files to completely bypass browser disk caches
+    hasher = hashlib.md5()
+    for fname in sorted(patched_files.keys()):
+        hasher.update(patched_files[fname].encode('utf-8'))
+    bhash = hasher.hexdigest()[:8]
+    print(f"Computed unique build cache-busting hash: {bhash}")
+
+    name_map = {}
+    for fname in patched_files.keys():
+        name_parts = fname.rsplit('.js', 1)
+        new_fname = f"{name_parts[0]}.p{bhash}.js"
+        name_map[fname] = new_fname
+
+        old_fpath = os.path.join(assets_dir, fname)
+        new_fpath = os.path.join(assets_dir, new_fname)
+        if os.path.exists(old_fpath):
+            os.rename(old_fpath, new_fpath)
+            print(f"Cache-bust rename: {fname} -> {new_fname}")
+
+    # 6. Update all module import references across all files in web/
+    print("Updating asset references across all web files...")
+    for root, _, files in os.walk(web_dir):
+        for fname in files:
+            fpath = os.path.join(root, fname)
+            try:
+                with open(fpath, 'r', encoding='utf-8', errors='ignore') as fp:
+                    content = fp.read()
+                orig_content = content
+                for old_name, new_name in name_map.items():
+                    if old_name in content:
+                        content = content.replace(old_name, new_name)
+                if content != orig_content:
+                    with open(fpath, 'w', encoding='utf-8') as fp:
+                        fp.write(content)
+            except Exception as e:
+                print(f"Error updating references in {fname}: {e}")
+
+    # 7. Update index.html with cache-busting meta tags and versioned custom scripts
+    index_html_path = os.path.join(web_dir, 'index.html')
+    if os.path.exists(index_html_path):
+        with open(index_html_path, 'r', encoding='utf-8') as fp:
+            html = fp.read()
+
+        # Update /custom/ script and css versions
+        html = re.sub(r'/custom/index\.js(?:\?v=[^\"]*)?', f'/custom/index.js?v={bhash}', html)
+        html = re.sub(r'/custom/index\.css(?:\?v=[^\"]*)?', f'/custom/index.css?v={bhash}', html)
+
+        # Inject no-cache meta tags into <head>
+        meta_tags = (
+            '\n\t<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />'
+            '\n\t<meta http-equiv="Pragma" content="no-cache" />'
+            '\n\t<meta http-equiv="Expires" content="0" />'
+        )
+        if 'http-equiv="Cache-Control"' not in html:
+            html = html.replace('<head>', '<head>' + meta_tags)
+
+        with open(index_html_path, 'w', encoding='utf-8') as fp:
+            fp.write(html)
+        print("Injected cache-busting meta headers and custom asset query strings into index.html")
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
