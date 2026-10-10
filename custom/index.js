@@ -19,16 +19,21 @@
     return false;
   };
 
-  // Built-in Vector SVG Icons for Popular Shortcuts (0 External Network Request)
+  // Built-in Official Vector SVG Icons for Popular Shortcuts (0 External Network Request)
   const BUILTIN_ICONS = {
+    gemini: '<svg viewBox="0 0 24 24"><defs><linearGradient id="gemini-official-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#4E82EE"/><stop offset="50%" stop-color="#9B72CB"/><stop offset="100%" stop-color="#D96570"/></linearGradient></defs><path fill="url(#gemini-official-grad)" d="M12 1C12 7.075 16.925 12 23 12C16.925 12 12 16.925 12 23C12 16.925 7.075 12 1 12C7.075 12 12 7.075 12 1Z"/></svg>',
     google: '<svg viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96z"/></svg>',
     github: '<svg viewBox="0 0 24 24" fill="#ffffff"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>',
     bilibili: '<svg viewBox="0 0 24 24" fill="#00AEEC"><path d="M17.813 4.653h.854c1.51.054 2.769.578 3.773 1.574 1.004.995 1.524 2.249 1.56 3.76v7.36c-.036 1.51-.556 2.769-1.56 3.773s-2.262 1.524-3.773 1.56H5.333c-1.51-.036-2.769-.556-3.773-1.56S.036 18.858 0 17.347v-7.36c.036-1.511.556-2.765 1.56-3.76 1.004-.996 2.262-1.52 3.773-1.574h.774l-1.174-1.12a1.234 1.234 0 0 1-.373-.906c0-.356.124-.658.373-.907l.027-.027c.267-.249.573-.373.92-.373.347 0 .653.124.92.373L9.653 4.44c.071.071.134.142.187.213h4.267a.836.836 0 0 1 .16-.213l2.853-2.747c.267-.249.573-.373.92-.373.347 0 .662.151.929.4.267.249.391.551.391.907 0 .355-.124.657-.373.906zM5.333 7.24c-.746.018-1.373.276-1.88.773-.506.498-.769 1.13-.786 1.894v7.52c.017.764.28 1.395.786 1.893.507.498 1.134.756 1.88.773h13.334c.746-.017 1.373-.275 1.88-.773.506-.498.769-1.129.786-1.893v-7.52c-.017-.765-.28-1.396-.786-1.894-.507-.497-1.134-.755-1.88-.773zM8 11.107c.373 0 .684.124.933.373.25.249.383.569.4.96v1.173c-.017.391-.15.711-.4.96-.249.25-.56.374-.933.374s-.684-.125-.933-.374c-.25-.249-.383-.569-.4-.96V12.44c0-.373.129-.689.386-.947.258-.257.574-.386.947-.386zm8 0c.373 0 .684.124.933.373.25.249.383.569.4.96v1.173c-.017.391-.15.711-.4.96-.249.25-.56.374-.933.374s-.684-.125-.933-.374c-.25-.249-.383-.569-.4-.96V12.44c.017-.391.15-.711.4-.96.249-.249.56-.373.933-.373Z"/></svg>',
     youtube: '<svg viewBox="0 0 24 24" fill="#FF0000"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>',
     chatgpt: '<svg viewBox="0 0 24 24" fill="#10a37f"><path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.081 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.494zM3.6 18.304a4.47 4.47 0 0 1-.535-3.014l.142.085 4.783 2.759a.771.771 0 0 0 .78 0l5.843-3.369v2.332a.08.08 0 0 1-.033.062L9.74 19.95a4.5 4.5 0 0 1-6.14-1.646zM2.34 7.896a4.485 4.485 0 0 1 2.366-1.973V11.6a.766.766 0 0 0 .388.676l5.815 3.355-2.02 1.168a.076.076 0 0 1-.071 0l-4.83-2.786A4.504 4.504 0 0 1 2.34 7.872zm16.597 3.855l-5.833-3.387L15.119 7.2a.076.076 0 0 1 .071 0l4.83 2.791a4.494 4.494 0 0 1-.676 8.105v-5.678a.79.79 0 0 0-.407-.667zm2.01-3.023l-.141-.085-4.774-2.782a.776.776 0 0 0-.785 0L9.409 9.23V6.897a.066.066 0 0 1 .028-.061l4.83-2.787a4.5 4.5 0 0 1 6.68 4.66zm-12.64 4.135l-2.02-1.164a.08.08 0 0 1-.038-.057V6.075a4.5 4.5 0 0 1 7.375-3.453l-.142.08L8.704 5.46a.795.795 0 0 0-.393.681zm1.097-2.365l2.602-1.5 2.607 1.5v2.999l-2.597 1.5-2.607-1.5z"/></svg>',
+    deepseek: '<svg viewBox="0 0 24 24" fill="#4D6BFE"><path d="M22.5 11.2c-.6-.3-1.4-.2-2 .2-.4.3-.8.4-1.3.3-.6-.1-1.1-.6-1.4-1.2-.5-1.1-.7-2.3-.5-3.5.1-.6-.3-1.2-.9-1.3-2.3-.4-4.7.2-6.6 1.6-1.5 1.1-2.6 2.7-3.2 4.5-.5-1.2-1.6-2-2.9-2.2-1.3-.2-2.6.4-3.3 1.5-.3.5-.2 1.1.3 1.4.4.3 1 .2 1.3-.2.4-.5 1-.8 1.7-.7.7.1 1.2.6 1.4 1.3.2.8.1 1.6-.2 2.4-.5 1.3.1 2.8 1.4 3.4 2.1.9 4.5.9 6.6 0 2.1-.9 3.8-2.6 4.7-4.7.4-.9 1.2-1.5 2.2-1.6.5 0 1-.3 1.2-.8.2-.3 0-.6-.5-.6z"/><circle cx="15.5" cy="9.5" r="1.3" fill="#fff"/></svg>',
+    claude: '<svg viewBox="0 0 24 24" fill="#D97757"><path d="M12 2L13.8 8.6L19.5 4.9L15.8 10.6L22.4 12.4L15.8 14.2L19.5 19.9L13.8 16.2L12 22.8L10.2 16.2L4.5 19.9L8.2 14.2L1.6 12.4L8.2 10.6L4.5 4.9L10.2 8.6L12 2Z"/></svg>',
     linuxdo: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#f59e0b"/><path fill="#fff" d="M8 7h3v7h5v3H8V7z"/></svg>',
     v2ex: '<svg viewBox="0 0 24 24" fill="#ffffff"><path d="M2.5 4h19A1.5 1.5 0 0 1 23 5.5v13a1.5 1.5 0 0 1-1.5 1.5h-19A1.5 1.5 0 0 1 1 18.5v-13A1.5 1.5 0 0 1 2.5 4zm4.8 4.2L10.9 12l-3.6 3.8h2.6l3.6-3.8-3.6-3.8H7.3zm6.2 6.8v1.8h5v-1.8h-5z"/></svg>',
-    cloudflare: '<svg viewBox="0 0 24 24" fill="#F38020"><path d="M16.5088 16.8447c.1475-.5068.0908-.9707-.1553-1.3154-.2246-.3164-.6045-.499-1.0615-.5205l-8.6592-.1123a.1559.1559 0 0 1-.1338-.0713c-.0283-.0479-.0351-.1094-.0175-.1729.0283-.0957.1142-.1631.2148-.1689l8.7393-.1123c1.0371-.0479 2.1601-.8868 2.5537-1.9131l.499-1.3018c.0215-.0566.0293-.1172.0147-.1758C18.0215 8.958 16.2236 7.5 14.0547 7.5c-1.999 0-3.7041 1.2852-4.2988 3.0645-.4141-.3096-.9375-.4746-1.498-.418-1.0118.1006-1.8252.918-1.9219 1.9297-.0254.2666.0049.5244.0762.7656C4.9092 12.8838 3.7 14.1201 3.7 15.6553c0 .1416.0117.2832.0322.4219.0147.0957.0957.167.1934.167h12.3701a.2314.2314 0 0 0 .2131-.1651l.0002-.2344zm2.8935-5.3086c-.0683 0-.1357.0029-.2031.0088-.0527.0049-.0986.04-.1143.0908l-.3427 1.1895c-.1475.5068-.0909.9707.1552 1.3154.2246.3164.6045.499 1.0616.5205l1.8554.1123c.0547.0029.1045.0313.1338.0713.0283.0479.0352.1094.0176.1729-.0283.0957-.1143.1631-.2149.1689l-1.9306.1123c-1.041.0479-2.1641.8868-2.5576 1.9131l-.1416.3691c-.0284.0732.0254.1514.1045.1514h6.6318c.0918 0 .1729-.0605.1992-.1484.1328-.4434.2051-.915.2051-1.4043 0-2.3408-1.8984-4.2436-4.2564-4.2436z"/></svg>'
+    cloudflare: '<svg viewBox="0 0 24 24" fill="#F38020"><path d="M16.5088 16.8447c.1475-.5068.0908-.9707-.1553-1.3154-.2246-.3164-.6045-.499-1.0615-.5205l-8.6592-.1123a.1559.1559 0 0 1-.1338-.0713c-.0283-.0479-.0351-.1094-.0175-.1729.0283-.0957.1142-.1631.2148-.1689l8.7393-.1123c1.0371-.0479 2.1601-.8868 2.5537-1.9131l.499-1.3018c.0215-.0566.0293-.1172.0147-.1758C18.0215 8.958 16.2236 7.5 14.0547 7.5c-1.999 0-3.7041 1.2852-4.2988 3.0645-.4141-.3096-.9375-.4746-1.498-.418-1.0118.1006-1.8252.918-1.9219 1.9297-.0254.2666.0049.5244.0762.7656C4.9092 12.8838 3.7 14.1201 3.7 15.6553c0 .1416.0117.2832.0322.4219.0147.0957.0957.167.1934.167h12.3701a.2314.2314 0 0 0 .2131-.1651l.0002-.2344zm2.8935-5.3086c-.0683 0-.1357.0029-.2031.0088-.0527.0049-.0986.04-.1143.0908l-.3427 1.1895c-.1475.5068-.0909.9707.1552 1.3154.2246.3164.6045.499 1.0616.5205l1.8554.1123c.0547.0029.1045.0313.1338.0713.0283.0479.0352.1094.0176.1729-.0283.0957-.1143.1631-.2149.1689l-1.9306.1123c-1.041.0479-2.1641.8868-2.5576 1.9131l-.1416.3691c-.0284.0732.0254.1514.1045.1514h6.6318c.0918 0 .1729-.0605.1992-.1484.1328-.4434.2051-.915.2051-1.4043 0-2.3408-1.8984-4.2436-4.2564-4.2436z"/></svg>',
+    x: '<svg viewBox="0 0 24 24" fill="#ffffff"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>',
+    reddit: '<svg viewBox="0 0 24 24" fill="#FF4500"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>'
   };
 
   const DEFAULT_SHORTCUTS = [
@@ -42,18 +47,24 @@
     { id: 'qs_8', title: 'Cloudflare', url: 'https://dash.cloudflare.com', icon: 'cloudflare', color: '#F38020' }
   ];
 
-  // Auto-detect icon key from URL
-  function detectIconKey(url, iconField) {
-    if (iconField && BUILTIN_ICONS[iconField]) return iconField;
+  // Auto-detect icon key from URL or Title (Specific subdomains checked BEFORE generic domains!)
+  function detectIconKey(url, iconField, title) {
+    if (iconField && BUILTIN_ICONS[iconField.toLowerCase()]) return iconField.toLowerCase();
     const u = (url || '').toLowerCase();
-    if (u.includes('google.')) return 'google';
+    const t = (title || '').toLowerCase();
+    if (u.includes('gemini.google.') || t === 'gemini') return 'gemini';
+    if (u.includes('deepseek.') || t.includes('deepseek')) return 'deepseek';
+    if (u.includes('claude.ai') || t === 'claude') return 'claude';
+    if (u.includes('chatgpt.') || u.includes('openai.')) return 'chatgpt';
     if (u.includes('github.')) return 'github';
     if (u.includes('bilibili.') || u.includes('b23.tv')) return 'bilibili';
     if (u.includes('youtube.') || u.includes('youtu.be')) return 'youtube';
-    if (u.includes('chatgpt.') || u.includes('openai.')) return 'chatgpt';
     if (u.includes('linux.do')) return 'linuxdo';
     if (u.includes('v2ex.')) return 'v2ex';
     if (u.includes('cloudflare.')) return 'cloudflare';
+    if (u.includes('twitter.') || u.includes('://x.com')) return 'x';
+    if (u.includes('reddit.')) return 'reddit';
+    if (u.includes('google.')) return 'google';
     return null;
   }
 
@@ -99,7 +110,6 @@
     return null;
   }
 
-  // Read panelConfig from cache or global
   let cachedPanelConfig = null;
   function getCardOpenTarget() {
     if (cachedPanelConfig && cachedPanelConfig.cardOpenTarget) {
@@ -119,7 +129,6 @@
     return 'blank';
   }
 
-  // Load shortcuts from localStorage immediately (0ms), then sync from cloud userConfig
   function getLocalShortcuts() {
     try {
       const raw = localStorage.getItem('SUN_PANEL_QUICK_SHORTCUTS');
@@ -206,7 +215,7 @@
       </div>
       <div style="padding:18px 20px;display:flex;flex-direction:column;gap:14px;">
         <div>
-          <div style="font-size:13px;color:#aaa;margin-bottom:6px;">名称 (如: Bilibili / Google)</div>
+          <div style="font-size:13px;color:#aaa;margin-bottom:6px;">名称 (如: Gemini / Bilibili / Google)</div>
           <input id="qs-input-title" type="text" value="${item.title.replace(/"/g, '&quot;')}" placeholder="输入显示名称" style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:8px;border:1px solid #444;background:#272732;color:#fff;font-size:14px;outline:none;" />
         </div>
         <div>
@@ -214,8 +223,8 @@
           <input id="qs-input-url" type="text" value="${item.url.replace(/"/g, '&quot;')}" placeholder="https://..." style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:8px;border:1px solid #444;background:#272732;color:#fff;font-size:14px;outline:none;" />
         </div>
         <div>
-          <div style="font-size:13px;color:#aaa;margin-bottom:6px;">图标 URL 或内置代号 (留空则自动匹配或用首字母)</div>
-          <input id="qs-input-icon" type="text" value="${(item.icon || '').replace(/"/g, '&quot;')}" placeholder="可选: google/github/bilibili/youtube/chatgpt 或图片链接" style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:8px;border:1px solid #444;background:#272732;color:#fff;font-size:13px;outline:none;" />
+          <div style="font-size:13px;color:#aaa;margin-bottom:6px;">图标 URL 或内置代号 (留空自动识别官方图标)</div>
+          <input id="qs-input-icon" type="text" value="${(item.icon || '').replace(/"/g, '&quot;')}" placeholder="可选: gemini/google/github/bilibili/chatgpt 或图片链接" style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:8px;border:1px solid #444;background:#272732;color:#fff;font-size:13px;outline:none;" />
         </div>
       </div>
       <div style="padding:14px 20px;border-top:1px solid #333340;display:flex;justify-content:flex-end;gap:10px;background:#18181d;">
@@ -266,15 +275,209 @@
   }
 
   function renderShortcutIconHTML(sc) {
-    const key = detectIconKey(sc.url, sc.icon);
+    const key = detectIconKey(sc.url, sc.icon, sc.title);
     if (key && BUILTIN_ICONS[key]) {
       return BUILTIN_ICONS[key];
     }
     if (sc.icon && (sc.icon.startsWith('http') || sc.icon.startsWith('/'))) {
-      return `<img src="${sc.icon}" alt="${sc.title}" onerror="this.style.display='none';this.parentElement.innerHTML='<span class=\\'qs-icon-letter\\'>${(sc.title || '?')[0]}</span>'" />`;
+      return `<img src="${sc.icon}" alt="${sc.title}" draggable="false" onerror="this.style.display='none';this.parentElement.innerHTML='<span class=\\'qs-icon-letter\\'>${(sc.title || '?')[0]}</span>'" />`;
     }
+    // Try Google S2 high-res favicon with fallback to letter
+    try {
+      const u = new URL(sc.url);
+      if (u.hostname) {
+        const favUrl = `https://www.google.com/s2/favicons?domain=${u.hostname}&sz=64`;
+        return `<img src="${favUrl}" alt="${sc.title}" draggable="false" onerror="this.style.display='none';this.parentElement.innerHTML='<span class=\\'qs-icon-letter\\'>${(sc.title || '?')[0]}</span>'" />`;
+      }
+    } catch(e) {}
     const letter = (sc.title || '?').trim()[0] || '?';
     return `<span class="qs-icon-letter">${letter}</span>`;
+  }
+
+  // =========================================================
+  // Silky Chrome-Style Long-Press & Pointer Drag-and-Drop Engine
+  // Works seamlessly in BOTH View Mode and Edit Mode!
+  // =========================================================
+  let qsDragState = null;
+
+  function initShortcutPointerDrag(itemEl, bar) {
+    itemEl.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      if (e.target.closest('.qs-action-badges')) return;
+      if (itemEl.classList.contains('qs-add-btn')) return;
+
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const rect = itemEl.getBoundingClientRect();
+      const offsetX = startX - rect.left;
+      const offsetY = startY - rect.top;
+
+      let dragActivated = false;
+      let longPressTimer = null;
+
+      const activateDrag = () => {
+        if (dragActivated) return;
+        dragActivated = true;
+        clearTimeout(longPressTimer);
+
+        if (navigator.vibrate) {
+          try { navigator.vibrate(25); } catch(err){}
+        }
+
+        // Create floating clone that follows pointer smoothly
+        const ghost = itemEl.cloneNode(true);
+        const badges = ghost.querySelector('.qs-action-badges');
+        if (badges) badges.remove();
+        ghost.className = 'qs-item qs-drag-ghost';
+        ghost.style.cssText = `
+          position: fixed;
+          left: 0;
+          top: 0;
+          width: ${rect.width}px;
+          height: ${rect.height}px;
+          transform: translate3d(${rect.left}px, ${rect.top}px, 0) scale(1.12);
+          z-index: 999999;
+          pointer-events: none;
+          background: rgba(50, 50, 68, 0.85);
+          backdrop-filter: blur(12px);
+          border-radius: 14px;
+          box-shadow: 0 14px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.28);
+          transition: transform 0.04s linear, box-shadow 0.2s ease;
+        `;
+        document.body.appendChild(ghost);
+
+        itemEl.classList.add('qs-drag-placeholder');
+        bar.classList.add('qs-is-dragging');
+
+        qsDragState = {
+          itemEl,
+          ghost,
+          offsetX,
+          offsetY,
+          movedOrder: false
+        };
+      };
+
+      // Activate on 220ms hold (Chrome mobile/desktop long-press feel)
+      longPressTimer = setTimeout(activateDrag, 220);
+
+      const onPointerMove = (moveEv) => {
+        const dx = moveEv.clientX - startX;
+        const dy = moveEv.clientY - startY;
+        const dist = Math.hypot(dx, dy);
+
+        // On mouse, if user drags > 6px intentionally, activate immediately!
+        if (!dragActivated && moveEv.pointerType === 'mouse' && dist > 6) {
+          activateDrag();
+        } else if (!dragActivated && dist > 12) {
+          // On touch, if user scrolls page quickly before 220ms, cancel long-press
+          clearTimeout(longPressTimer);
+          cleanupListeners();
+          return;
+        }
+
+        if (!dragActivated || !qsDragState) return;
+        moveEv.preventDefault();
+
+        const x = moveEv.clientX - qsDragState.offsetX;
+        const y = moveEv.clientY - qsDragState.offsetY;
+        qsDragState.ghost.style.transform = `translate3d(${x}px, ${y}px, 0) scale(1.12)`;
+
+        // FLIP collision detection with sibling qs-items
+        const siblings = Array.from(bar.querySelectorAll('.qs-item:not(.qs-add-btn)'));
+        const curIndex = siblings.indexOf(itemEl);
+
+        for (let i = 0; i < siblings.length; i++) {
+          const target = siblings[i];
+          if (target === itemEl) continue;
+          const tRect = target.getBoundingClientRect();
+          const centerX = tRect.left + tRect.width / 2;
+          const centerY = tRect.top + tRect.height / 2;
+
+          if (
+            moveEv.clientX > tRect.left && moveEv.clientX < tRect.right &&
+            moveEv.clientY > tRect.top && moveEv.clientY < tRect.bottom
+          ) {
+            // Measure all before DOM swap for FLIP animation
+            const beforeRects = new Map();
+            siblings.forEach(el => beforeRects.set(el, el.getBoundingClientRect()));
+
+            if (curIndex < i) {
+              bar.insertBefore(itemEl, target.nextSibling);
+            } else {
+              bar.insertBefore(itemEl, target);
+            }
+            qsDragState.movedOrder = true;
+
+            // FLIP animate shifted siblings
+            siblings.forEach(el => {
+              if (el === itemEl) return;
+              const oldR = beforeRects.get(el);
+              const newR = el.getBoundingClientRect();
+              const deltaX = oldR.left - newR.left;
+              const deltaY = oldR.top - newR.top;
+              if (deltaX !== 0 || deltaY !== 0) {
+                el.style.transition = 'none';
+                el.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0)`;
+                requestAnimationFrame(() => {
+                  el.style.transition = 'transform 220ms cubic-bezier(0.2, 0, 0, 1)';
+                  el.style.transform = '';
+                });
+              }
+            });
+            break;
+          }
+        }
+      };
+
+      const onPointerUpOrCancel = async (upEv) => {
+        clearTimeout(longPressTimer);
+        cleanupListeners();
+
+        if (dragActivated && qsDragState) {
+          const { ghost } = qsDragState;
+          const finalRect = itemEl.getBoundingClientRect();
+
+          // Smooth snap-back animation to new slot
+          ghost.style.transition = 'transform 180ms cubic-bezier(0.2, 0, 0, 1), opacity 180ms ease';
+          ghost.style.transform = `translate3d(${finalRect.left}px, ${finalRect.top}px, 0) scale(1)`;
+
+          setTimeout(() => {
+            if (ghost.parentNode) ghost.parentNode.removeChild(ghost);
+            itemEl.classList.remove('qs-drag-placeholder');
+            bar.classList.remove('qs-is-dragging');
+          }, 180);
+
+          // Persist new order based on DOM order
+          const newDomEls = Array.from(bar.querySelectorAll('.qs-item:not(.qs-add-btn)'));
+          const newOrderedList = newDomEls.map(el => {
+            const id = el.getAttribute('data-qs-id');
+            return currentShortcuts.find(s => s.id === id);
+          }).filter(Boolean);
+
+          if (newOrderedList.length === currentShortcuts.length) {
+            await saveCloudShortcuts(newOrderedList);
+            if (qsDragState.movedOrder) {
+              showToast('快捷方式顺序已自动保存');
+            }
+          }
+
+          // Suppress click navigation right after drag
+          itemEl.__suppressClickUntil = Date.now() + 300;
+          qsDragState = null;
+        }
+      };
+
+      function cleanupListeners() {
+        window.removeEventListener('pointermove', onPointerMove, { passive: false });
+        window.removeEventListener('pointerup', onPointerUpOrCancel);
+        window.removeEventListener('pointercancel', onPointerUpOrCancel);
+      }
+
+      window.addEventListener('pointermove', onPointerMove, { passive: false });
+      window.addEventListener('pointerup', onPointerUpOrCancel);
+      window.addEventListener('pointercancel', onPointerUpOrCancel);
+    });
   }
 
   function renderQuickShortcutsBar() {
@@ -288,12 +491,16 @@
       searchContainer.parentNode.insertBefore(bar, searchContainer.nextSibling);
     }
 
+    // Do not interrupt active drag
+    if (bar.classList.contains('qs-is-dragging')) return;
+
     bar.innerHTML = '';
 
     currentShortcuts.forEach((sc, idx) => {
       const itemEl = document.createElement('div');
       itemEl.className = 'qs-item';
-      itemEl.title = `${sc.title} (${sc.url})`;
+      itemEl.setAttribute('data-qs-id', sc.id);
+      itemEl.title = `${sc.title} (${sc.url}) · 长按或拖动可调整顺序`;
 
       itemEl.innerHTML = `
         <div class="qs-action-badges">
@@ -304,8 +511,16 @@
         <div class="qs-title">${sc.title}</div>
       `;
 
+      // Attach Chrome-style pointer drag-and-drop
+      initShortcutPointerDrag(itemEl, bar);
+
       // Click handler
       itemEl.onclick = (e) => {
+        if (itemEl.__suppressClickUntil && Date.now() < itemEl.__suppressClickUntil) {
+          e.stopPropagation();
+          e.preventDefault();
+          return;
+        }
         if (e.target.closest('.qs-action-badges')) return;
         const targetMode = getCardOpenTarget();
         if (targetMode === 'self') {
@@ -371,6 +586,22 @@
     }
   });
 
+  // Direct Search Input Listener to guarantee Pinyin search even during IME composition or early typing
+  function bindSearchInputFallback() {
+    const searchInput = document.querySelector('.search-box input');
+    if (searchInput && !searchInput.__pinyinBound) {
+      searchInput.__pinyinBound = true;
+      const handler = () => {
+        if (typeof window.__triggerSunPanelSearch === 'function') {
+          window.__triggerSunPanelSearch(searchInput.value);
+        }
+      };
+      searchInput.addEventListener('input', handler);
+      searchInput.addEventListener('keyup', handler);
+      searchInput.addEventListener('compositionend', handler);
+    }
+  }
+
   // 1. Edit Mode vs View Mode Controller
   let currentMode = sessionStorage.getItem('sun_panel_display_mode') || 'view';
   if (currentMode === 'edit') {
@@ -419,7 +650,7 @@
           document.body.classList.add('edit-mode');
           sessionStorage.setItem('sun_panel_display_mode', 'edit');
           updateModeButtonVisual(btn, 'edit');
-          showToast('已进入编辑模式（可管理快捷方式、节点与卡片）');
+          showToast('已进入编辑模式（可管理节点、卡片与快捷方式）');
         }
       };
 
@@ -631,11 +862,18 @@
     };
   }
 
+  let hasSyncedCloud = false;
+
   function injectEditButtons() {
     injectModeToggle();
+    bindSearchInputFallback();
 
     if (!document.getElementById('custom-quick-shortcuts-bar') && document.querySelector('.search-box')) {
       renderQuickShortcutsBar();
+      if (!hasSyncedCloud) {
+        hasSyncedCloud = true;
+        syncCloudShortcuts();
+      }
     }
 
     const groupDivs = document.querySelectorAll('div[id^="item-group-"]');
@@ -675,7 +913,6 @@
         return span;
       };
 
-      // 1. Rename Button
       const editBtn = createBtn(
         '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>',
         '修改节点名称',
@@ -712,21 +949,18 @@
         }
       );
 
-      // 2. Move Up Button
       const upBtn = createBtn(
         '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
         '上移此节点',
         () => moveGroupDirect(groupId, -1)
       );
 
-      // 3. Move Down Button
       const downBtn = createBtn(
         '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>',
         '下移此节点',
         () => moveGroupDirect(groupId, 1)
       );
 
-      // 4. Sort Modal Button
       const modalBtn = createBtn(
         '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>',
         '节点排序管理窗口',
@@ -740,7 +974,5 @@
     });
   }
 
-  // Initial Cloud Sync
-  setTimeout(syncCloudShortcuts, 100);
   setInterval(injectEditButtons, 300);
 })();

@@ -137,6 +137,7 @@ def patch_frontend(web_dir):
                 # 2. Patch index-Dca3OcbT.js (Store and base config)
                 if 'function Nc(){return{' in content:
                     content = content.replace('function Nc(){return{', 'function Nc(){return{cardOpenTarget:"blank",')
+                    content = content.replace('searchBoxSearchIcon:!1', 'searchBoxSearchIcon:!0')
                     # Add i18n
                     content = content.replace('cardStyle:"卡片风格",', 'cardStyle:"卡片风格",cardOpenTarget:"点击卡片打开方式",openBlank:"新建标签页打开",openSelf:"当前页直接跳转",')
                     content = content.replace('"cardStyle":"Card style",', '"cardStyle":"Card style","cardOpenTarget":"Card click action","openBlank":"Open in new tab","openSelf":"Direct jump in current page",')
@@ -193,7 +194,8 @@ def patch_frontend(web_dir):
                     content = content.replace(target_sb_lim, 'if(false)')
                     print(f"Removed search engine count limit in {fname}")
 
-                # Search box pinyin match hook
+                # Search box pinyin match hook (also force searchBoxSearchIcon on)
+                content = content.replace('ve!==""&&r.panelConfig.searchBoxSearchIcon', 've!==""&&(r.panelConfig.searchBoxSearchIcon!==false)')
                 idx_filter = content.find('Pe.filter(wt=>{var $t;return wt.title.toLowerCase()')
                 if idx_filter != -1:
                     end_filter = content.find(';Ae&&', idx_filter)
@@ -201,6 +203,11 @@ def patch_frontend(web_dir):
                         rep_filter = 'Pe.filter(wt=>{var $t;return window.__matchSearch?window.__matchSearch(wt,ve):(wt.title.toLowerCase().includes((ve==null?void 0:ve.toLowerCase())??"")||wt.url.toLowerCase().includes((ve==null?void 0:ve.toLowerCase())??"")||(($t=wt.description)==null?void 0:$t.toLowerCase().includes((ve==null?void 0:ve.toLowerCase())??"")))})'
                         content = content[:idx_filter] + rep_filter + content[end_filter:]
                         print(f"Hooked searchBox item filter for Pinyin in {fname}")
+
+                # Expose Search Callback globally for instant fallback trigger
+                if 'function ue(ve){' in content:
+                    content = content.replace('function ue(ve){', 'window.__triggerSunPanelSearch=ue;function ue(ve){')
+                    print(f"Exposed window.__triggerSunPanelSearch in {fname}")
 
                 if content != orig_content:
                     with open(fpath, 'w', encoding='utf-8') as f:
