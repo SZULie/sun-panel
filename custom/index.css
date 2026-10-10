@@ -93,13 +93,9 @@ body.edit-mode .group-buttons:hover {
   cursor: pointer;
   transition: background-color 0.2s ease, transform 0.22s cubic-bezier(0.2, 0, 0, 1), opacity 0.2s ease;
   text-decoration: none;
-  /* Preserve native vertical scroll by default; Edit mode takes over for reordering. */
-  touch-action: pan-y;
-  -webkit-touch-callout: none;
-}
-
-body.edit-mode .qs-item {
+  /* Touch gestures are arbitrated by the drag controller to preserve scroll + reorder. */
   touch-action: none;
+  -webkit-touch-callout: none;
 }
 
 .qs-item:hover {
