@@ -295,18 +295,11 @@
   }
 
   // =========================================================
-  // Silky Chrome-Style Long-Press & Pointer Drag-and-Drop Engine
-  // Works seamlessly in BOTH View Mode and Edit Mode!
-  // =========================================================
-    // =========================================================
-  // Chrome 原生级丝滑拖拽重排引擎 (Virtual Flow + Transform Shift)
-  // 核心原理：在拖动过程中完全不动 DOM 树，零震颤零抽搐；其他卡片通过 CSS Transform 丝滑滑移让位；
-  // 松手时一次性平滑归位并同步云端数据。
-  // =========================================================
-    // =========================================================
-  // Chrome 原生级丝滑拖拽重排引擎 (Virtual Flow + Transform Shift)
-  // 核心原理：在拖动过程中完全不动 DOM 树，零震颤零抽搐；其他卡片通过 CSS Transform 丝滑滑移让位；
-  // 松手时一次性平滑归位并同步云端数据。
+  // Chrome 原生级 2D 多行/单行全自适应丝滑拖拽重排引擎 (Multi-Row Adaptive 2D Layout Flow)
+  // 核心特性：
+  // 1. 支持电脑宽屏（单行横向）与 手机/平板/窄屏（多行网格）全自适应 2D 拖拽！
+  // 2. 严密的 2D 欧几里得距离与中点滞后判定，绝对零震颤零抽搐；
+  // 3. 拖拽过程中非拖拽元素沿 (dx, dy) 2D 物理滑移让位，松手平滑归位并持久化云端。
   // =========================================================
   let qsDragState = null;
 
@@ -334,21 +327,21 @@
           try { navigator.vibrate(25); } catch(err){}
         }
 
-        // Cache all items and their initial geometry
         const items = Array.from(bar.querySelectorAll('.qs-item:not(.qs-add-btn)'));
         const startIndex = items.indexOf(itemEl);
         if (startIndex === -1) return;
 
-        // Measure geometry of every item
+        // Capture initial 2D geometry for all items
         const itemLayouts = items.map(el => {
           const r = el.getBoundingClientRect();
           return {
             el,
+            left: r.left,
+            top: r.top,
             width: r.width,
             height: r.height,
-            left: r.left,
-            right: r.right,
-            center: r.left + r.width / 2
+            centerX: r.left + r.width / 2,
+            centerY: r.top + r.height / 2
           };
         });
 
@@ -377,7 +370,6 @@
         itemEl.classList.add('qs-drag-placeholder');
         bar.classList.add('qs-is-dragging');
 
-        // Enable smooth transforms on sibling items
         items.forEach(el => {
           if (el !== itemEl) {
             el.style.transition = 'transform 260ms cubic-bezier(0.2, 0, 0, 1)';
@@ -414,28 +406,33 @@
         if (!dragActivated || !qsDragState) return;
         moveEv.preventDefault();
 
-        // 1. Move ghost smoothly
-        const x = moveEv.clientX - qsDragState.offsetX;
-        const y = moveEv.clientY - qsDragState.offsetY;
-        qsDragState.ghost.style.transform = `translate3d(${x}px, ${y}px, 0) scale(1.15)`;
+        // 1. Move ghost smoothly with pointer
+        const gx = moveEv.clientX - qsDragState.offsetX;
+        const gy = moveEv.clientY - qsDragState.offsetY;
+        qsDragState.ghost.style.transform = `translate3d(${gx}px, ${gy}px, 0) scale(1.15)`;
 
-        // 2. Calculate virtual target slot using closest slot center + hysteresis deadzone
+        // 2. 2D Euclidean Distance + Hysteresis deadzone to find virtual target slot
         const { itemLayouts, startIndex, currentIndex } = qsDragState;
         const curPointerX = moveEv.clientX;
-        const slotWidth = itemLayouts[1] ? Math.abs(itemLayouts[1].center - itemLayouts[0].center) : 84;
+        const curPointerY = moveEv.clientY;
+
+        // Current slot center
+        const curCenter = itemLayouts[currentIndex];
+        const distToCurrent = Math.hypot(curPointerX - curCenter.centerX, curPointerY - curCenter.centerY);
+
+        // Hysteresis threshold: requires moving beyond 55% of card radius to switch
+        const switchThreshold = Math.min(curCenter.width, curCenter.height) * 0.55;
 
         let targetIndex = currentIndex;
-        const curCenter = itemLayouts[currentIndex].center;
-        const distFromCurrent = curPointerX - curCenter;
+        if (distToCurrent > switchThreshold) {
+          let closestIdx = currentIndex;
+          let minDistance = Infinity;
 
-        // Hysteresis threshold: must cross 58% of slot distance to switch slot (prevents boundary flicker)
-        if (Math.abs(distFromCurrent) > slotWidth * 0.58) {
-          let closestIdx = 0;
-          let minDiff = Infinity;
           for (let i = 0; i < itemLayouts.length; i++) {
-            const diff = Math.abs(curPointerX - itemLayouts[i].center);
-            if (diff < minDiff) {
-              minDiff = diff;
+            const layout = itemLayouts[i];
+            const d = Math.hypot(curPointerX - layout.centerX, curPointerY - layout.centerY);
+            if (d < minDistance) {
+              minDistance = d;
               closestIdx = i;
             }
           }
@@ -445,28 +442,27 @@
         if (targetIndex !== qsDragState.currentIndex) {
           qsDragState.currentIndex = targetIndex;
 
-          // 3. Apply smooth transform offsets without touching DOM!
-          // Every sibling shifts by slot size if affected by the new virtual order
-          const slotWidth = itemLayouts[1] ? (itemLayouts[1].left - itemLayouts[0].left) : 84;
-
+          // 3. Shift items in 2D space based on virtual target slot
           qsDragState.items.forEach((el, i) => {
             if (el === itemEl) return;
 
-            let shiftSteps = 0;
+            let shiftedSlotIdx = i;
             if (startIndex < targetIndex) {
-              // Dragged right: items between startIndex+1 and targetIndex shift left (-slotWidth)
               if (i > startIndex && i <= targetIndex) {
-                shiftSteps = -1;
+                shiftedSlotIdx = i - 1; // Shifts toward startIndex
               }
             } else if (startIndex > targetIndex) {
-              // Dragged left: items between targetIndex and startIndex-1 shift right (+slotWidth)
               if (i >= targetIndex && i < startIndex) {
-                shiftSteps = 1;
+                shiftedSlotIdx = i + 1; // Shifts toward startIndex
               }
             }
 
-            if (shiftSteps !== 0) {
-              el.style.transform = `translate3d(${shiftSteps * slotWidth}px, 0, 0)`;
+            if (shiftedSlotIdx !== i) {
+              const fromLayout = itemLayouts[i];
+              const toLayout = itemLayouts[shiftedSlotIdx];
+              const deltaX = toLayout.left - fromLayout.left;
+              const deltaY = toLayout.top - fromLayout.top;
+              el.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0)`;
             } else {
               el.style.transform = '';
             }
@@ -474,21 +470,18 @@
         }
       };
 
-      const onPointerUpOrCancel = async (upEv) => {
+      const onPointerUpOrCancel = async () => {
         clearTimeout(longPressTimer);
         cleanupListeners();
 
         if (dragActivated && qsDragState) {
           const { ghost, items, startIndex, currentIndex, itemLayouts } = qsDragState;
-          const slotWidth = itemLayouts[1] ? (itemLayouts[1].left - itemLayouts[0].left) : 84;
-          const targetOffset = (currentIndex - startIndex) * slotWidth;
-          const targetFinalLeft = initialRect.left + targetOffset;
+          const targetLayout = itemLayouts[currentIndex];
 
-          // Smooth snap animation of ghost into target slot
+          // Smooth snap animation of ghost into exact 2D target slot
           ghost.style.transition = 'transform 200ms cubic-bezier(0.2, 0, 0, 1), opacity 200ms ease';
-          ghost.style.transform = `translate3d(${targetFinalLeft}px, ${initialRect.top}px, 0) scale(1)`;
+          ghost.style.transform = `translate3d(${targetLayout.left}px, ${targetLayout.top}px, 0) scale(1)`;
 
-          // Reset all sibling transform transitions
           setTimeout(() => {
             if (ghost.parentNode) ghost.parentNode.removeChild(ghost);
             itemEl.classList.remove('qs-drag-placeholder');
@@ -499,12 +492,11 @@
               el.style.transform = '';
             });
 
-            // If order changed, physically reorder DOM and persist cloud
+            // If order changed, update array, re-render and persist cloud
             if (currentIndex !== startIndex) {
               const movedItem = currentShortcuts.splice(startIndex, 1)[0];
               currentShortcuts.splice(currentIndex, 0, movedItem);
 
-              // Re-render bar cleanly
               renderQuickShortcutsBar();
               saveCloudShortcuts(currentShortcuts);
               showToast('快捷方式顺序已保存');
@@ -634,19 +626,35 @@
     }
   });
 
-  // Direct Search Input Listener to guarantee Pinyin search even during IME composition or early typing
+  // Enhanced Search Input Listener: supports Pinyin matching, Esc to clear, Enter to open, and real-time syncing
   function bindSearchInputFallback() {
     const searchInput = document.querySelector('.search-box input');
     if (searchInput && !searchInput.__pinyinBound) {
       searchInput.__pinyinBound = true;
-      const handler = () => {
+
+      const triggerSearch = () => {
         if (typeof window.__triggerSunPanelSearch === 'function') {
           window.__triggerSunPanelSearch(searchInput.value);
         }
       };
-      searchInput.addEventListener('input', handler);
-      searchInput.addEventListener('keyup', handler);
-      searchInput.addEventListener('compositionend', handler);
+
+      searchInput.addEventListener('input', triggerSearch);
+      searchInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Escape') {
+          searchInput.value = '';
+          triggerSearch();
+          searchInput.blur();
+        } else if (e.key === 'Enter') {
+          // If user presses Enter and exactly 1 card or match is found, open it smoothly
+          const visibleCards = Array.from(document.querySelectorAll('.item-card-container'));
+          if (visibleCards.length === 1) {
+            visibleCards[0].click();
+          }
+        } else {
+          triggerSearch();
+        }
+      });
+      searchInput.addEventListener('compositionend', triggerSearch);
     }
   }
 
