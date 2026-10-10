@@ -461,6 +461,17 @@
         const dy = lastY - startY;
         const dist = Math.hypot(dx, dy);
 
+        // While the long-press timer is pending, route touch deltas into the
+        // application's own scroll container; touch-action:none is required for
+        // stable pointer capture after the reorder gesture activates.
+        if (!dragActivated && moveEv.pointerType === 'touch' && longPressTimer && dist > 10) {
+          const scroller = document.querySelector('.scroll-container');
+          if (scroller) scroller.scrollTop -= lastY - previousY;
+          else window.scrollBy(0, previousY - lastY);
+          itemEl.__suppressClickUntil = Date.now() + 450;
+          if (moveEv.cancelable) moveEv.preventDefault();
+          return;
+        }
         if (!dragActivated && moveEv.pointerType === 'mouse' && dist > 5) {
           activateDrag(lastX, lastY);
         } else if (!dragActivated && moveEv.pointerType === 'touch' && dist > 10) {
