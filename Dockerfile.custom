@@ -9,6 +9,7 @@ WORKDIR /build
 COPY patch_sun_panel.py /build/
 COPY --from=base /app/sun-panel /build/sun-panel
 COPY --from=base /app/web /build/web
+COPY custom/ /build/web/custom/
 
 RUN python3 /build/patch_sun_panel.py /build/sun-panel /build/sun-panel-unlocked /build/web
 

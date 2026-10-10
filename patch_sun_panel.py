@@ -214,6 +214,13 @@ def patch_frontend(web_dir):
     hasher = hashlib.md5()
     for fname in sorted(patched_files.keys()):
         hasher.update(patched_files[fname].encode('utf-8'))
+    # Also include custom/index.js and custom/index.css in hash calculation
+    for cfile in ['index.js', 'index.css']:
+        cpath = os.path.join(web_dir, 'custom', cfile)
+        if os.path.exists(cpath):
+            with open(cpath, 'rb') as fp:
+                hasher.update(fp.read())
+
     bhash = hasher.hexdigest()[:8]
     print(f"Computed unique build cache-busting hash: {bhash}")
 
@@ -247,7 +254,7 @@ def patch_frontend(web_dir):
             except Exception as e:
                 print(f"Error updating references in {fname}: {e}")
 
-    # 7. Update index.html with cache-busting meta tags and versioned custom scripts
+    # 7. Update index.html with cache-busting meta tags, modulepreload, and versioned custom scripts
     index_html_path = os.path.join(web_dir, 'index.html')
     if os.path.exists(index_html_path):
         with open(index_html_path, 'r', encoding='utf-8') as fp:
@@ -257,18 +264,25 @@ def patch_frontend(web_dir):
         html = re.sub(r'/custom/index\.js(?:\?v=[^\"]*)?', f'/custom/index.js?v={bhash}', html)
         html = re.sub(r'/custom/index\.css(?:\?v=[^\"]*)?', f'/custom/index.css?v={bhash}', html)
 
-        # Inject no-cache meta tags into <head>
+        # Inject no-cache meta tags & modulepreload into <head>
+        preload_tags = ""
+        # Preload the main chunk if identified
+        for old_k, new_k in name_map.items():
+            if 'index-C9Kg_QMv' in old_k:
+                preload_tags += f'\n\t<link rel="modulepreload" crossorigin href="/assets/{new_k}">'
+
         meta_tags = (
             '\n\t<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />'
             '\n\t<meta http-equiv="Pragma" content="no-cache" />'
             '\n\t<meta http-equiv="Expires" content="0" />'
+            + preload_tags
         )
         if 'http-equiv="Cache-Control"' not in html:
             html = html.replace('<head>', '<head>' + meta_tags)
 
         with open(index_html_path, 'w', encoding='utf-8') as fp:
             fp.write(html)
-        print("Injected cache-busting meta headers and custom asset query strings into index.html")
+        print("Injected cache-busting meta headers, modulepreload, and custom asset query strings into index.html")
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
