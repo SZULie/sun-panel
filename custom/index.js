@@ -389,9 +389,11 @@
         const items = Array.from(bar.querySelectorAll('.qs-item:not(.qs-add-btn)'));
         const startIndex = items.indexOf(itemEl);
         if (startIndex === -1) return;
+        const shortcutLength = currentShortcuts.length;
+        const geometryItems = items.slice(0, shortcutLength);
 
         // Capture initial 2D geometry for all items
-        const itemLayouts = items.map(el => {
+        const itemLayouts = geometryItems.map(el => {
           const r = el.getBoundingClientRect();
           return {
             el,
@@ -437,6 +439,7 @@
           itemEl,
           ghost,
           items,
+          geometryItems,
           itemLayouts,
           startIndex,
           currentIndex: startIndex,
@@ -576,10 +579,6 @@
           try { if (itemEl.hasPointerCapture(pointerId)) itemEl.releasePointerCapture(pointerId); } catch (err) {}
           capturedItem = false;
         }
-        if (capturedItem) {
-          try { if (itemEl.hasPointerCapture(pointerId)) itemEl.releasePointerCapture(pointerId); } catch (err) {}
-          capturedItem = false;
-        }
         if (upEv?.type === 'pointercancel' && !dragActivated) {
           itemEl.__suppressClickUntil = Date.now() + 300;
         }
@@ -590,7 +589,7 @@
           // Keep final coordinates and the moved item associated with this gesture;
           // a second render must not let an older timer commit a stale drag.
           const dragState = qsDragState;
-          const { ghost, items, startIndex, currentIndex, itemLayouts } = dragState;
+          const { ghost, items, geometryItems, startIndex, currentIndex, itemLayouts } = dragState;
           const targetLayout = itemLayouts[currentIndex];
 
           // Smooth snap animation of ghost into exact 2D target slot
@@ -602,7 +601,7 @@
             itemEl.classList.remove('qs-drag-placeholder');
             bar.classList.remove('qs-is-dragging');
 
-            items.forEach(el => {
+            geometryItems.forEach(el => {
               el.style.transition = '';
               el.style.transform = '';
             });

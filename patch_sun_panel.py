@@ -194,9 +194,11 @@ def patch_frontend(web_dir):
                     content = content.replace(target_sb_lim, 'if(false)')
                     print(f"Removed search engine count limit in {fname}")
 
-                # The base asset usually gates dashboard filtering behind searchBoxSearchIcon.
-                # Default it on for this custom image while preserving an explicit false opt-out.
-                content = content.replace('ve!==""&&r.panelConfig.searchBoxSearchIcon', 've!==""&&(r.panelConfig.searchBoxSearchIcon!==false)')
+                # Default missing legacy account values to enabled, but honor an explicit opt-out.
+                content = content.replace(
+                    've!==""&&r.panelConfig.searchBoxSearchIcon',
+                    've!==""&&(r.panelConfig.searchBoxSearchIcon===undefined||r.panelConfig.searchBoxSearchIcon===true)'
+                )
                 # Vue's component may intentionally skip its native handler during IME composition.
                 # Capture the live DOM value at event target and schedule the established callback
                 # after Vue's own event/model work, rather than mutating its internal ref from the patch.
