@@ -93,9 +93,13 @@ body.edit-mode .group-buttons:hover {
   cursor: pointer;
   transition: background-color 0.2s ease, transform 0.22s cubic-bezier(0.2, 0, 0, 1), opacity 0.2s ease;
   text-decoration: none;
-  /* Touch gestures are arbitrated by the drag controller to preserve scroll + reorder. */
-  touch-action: none;
+  /* View mode keeps native vertical page scrolling; edit mode captures 2D reorder gestures. */
+  touch-action: pan-y;
   -webkit-touch-callout: none;
+}
+
+body.edit-mode .qs-item {
+  touch-action: none;
 }
 
 .qs-item:hover {

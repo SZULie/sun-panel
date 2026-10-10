@@ -355,7 +355,8 @@
       if (e.button !== 0 && e.pointerType === 'mouse') return;
       if (e.target.closest('.qs-action-badges')) return;
       if (itemEl.classList.contains('qs-add-btn')) return;
-      // In view mode preserve ordinary taps, context menus, and native scrolling.
+      // View mode leaves normal taps and vertical movement to the browser; the
+      // same held gesture is reserved for reorder only in explicit Edit mode.
       if (e.pointerType === 'touch' && !document.body.classList.contains('edit-mode')) return;
       let capturedItem = false;
       const startX = e.clientX;
@@ -371,6 +372,10 @@
       let lastY = startY;
       let rafId = 0;
       let pendingPoint = null;
+      // touch-action:none is needed to keep the pointer alive through a long press;
+      // manually hand vertical gestures to the app scroller below until drag starts.
+      if (e.pointerType === 'touch' && e.cancelable) e.preventDefault();
+      try { itemEl.setPointerCapture(pointerId); } catch (err) {}
       const activateDrag = (pointX = lastX, pointY = lastY) => {
         if (dragActivated) return;
         dragActivated = true;
@@ -484,9 +489,9 @@
             return;
           }
           if (Math.abs(dy) > Math.abs(dx) * 1.2) {
-            // Vertical intent cancels reorder and yields control to page scroll.
-            clearTimeout(longPressTimer);
-            longPressTimer = null;
+            // Keep the long-press armed for minor finger drift, but start native
+            // container scrolling and suppress accidental click navigation.
+            itemEl.__suppressClickUntil = Date.now() + 450;
             const scroller = document.querySelector('.scroll-container');
             if (scroller) scroller.scrollTop -= lastY - previousY;
             else window.scrollBy(0, previousY - lastY);
@@ -646,6 +651,8 @@
       }
 
       window.addEventListener('pointermove', onPointerMove, { passive: false });
+      // Pointer Events do not perform native page scrolling when touch-action is
+      // none; handle vertical movement before a long press on a non-passive path.
       window.addEventListener('pointerup', onPointerUpOrCancel);
       window.addEventListener('pointercancel', onPointerUpOrCancel);
       window.addEventListener('blur', onPointerUpOrCancel, { once: true });
