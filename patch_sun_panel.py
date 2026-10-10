@@ -194,8 +194,16 @@ def patch_frontend(web_dir):
                     content = content.replace(target_sb_lim, 'if(false)')
                     print(f"Removed search engine count limit in {fname}")
 
-                # Search box pinyin match hook (also force searchBoxSearchIcon on)
+                # The base asset usually gates dashboard filtering behind searchBoxSearchIcon.
+                # Default it on for this custom image while preserving an explicit false opt-out.
                 content = content.replace('ve!==""&&r.panelConfig.searchBoxSearchIcon', 've!==""&&(r.panelConfig.searchBoxSearchIcon!==false)')
+                # Vue's component may intentionally skip its native handler during IME composition.
+                # Capture the live DOM value at event target and schedule the established callback
+                # after Vue's own event/model work, rather than mutating its internal ref from the patch.
+                content = content.replace(
+                    'const J=()=>{t("itemSearch",a.value)};',
+                    'const J=()=>{queueMicrotask(()=>{const value=a.value.trim();if(value!==a.value)a.value=value;if(value!==""&&r.panelConfig.searchBoxSearchIcon){const groups=[];for(let i=0;i<$.value.length;i++){const group=$.value[i];const items=(group.items||[]).filter(item=>window.__matchSearch?window.__matchSearch(item,value):item.title.toLowerCase().includes(value.toLowerCase()));if(items.length)groups.push({...group,items,hoverStatus:!1})}k.value=groups}else k.value=$.value})};'
+                )
                 idx_filter = content.find('Pe.filter(wt=>{var $t;return wt.title.toLowerCase()')
                 if idx_filter != -1:
                     end_filter = content.find(';Ae&&', idx_filter)

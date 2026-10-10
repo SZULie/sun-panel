@@ -65,6 +65,7 @@ body.edit-mode .group-buttons:hover {
    ========================================================= */
 #custom-quick-shortcuts-bar {
   display: flex;
+  position: relative;
   flex-wrap: wrap;
   justify-content: center;
   align-items: flex-start;
@@ -75,6 +76,10 @@ body.edit-mode .group-buttons:hover {
   user-select: none;
   -webkit-user-select: none;
   z-index: 10;
+}
+
+#custom-quick-shortcuts-bar.qs-is-dragging {
+  z-index: 1000;
 }
 
 .qs-item {
@@ -88,7 +93,13 @@ body.edit-mode .group-buttons:hover {
   cursor: pointer;
   transition: background-color 0.2s ease, transform 0.22s cubic-bezier(0.2, 0, 0, 1), opacity 0.2s ease;
   text-decoration: none;
-  touch-action: manipulation;
+  /* Preserve native vertical scroll by default; Edit mode takes over for reordering. */
+  touch-action: pan-y;
+  -webkit-touch-callout: none;
+}
+
+body.edit-mode .qs-item {
+  touch-action: none;
 }
 
 .qs-item:hover {
@@ -98,18 +109,23 @@ body.edit-mode .group-buttons:hover {
 
 /* Drag Placeholder & Ghost States (Chrome NTP Feel) */
 .qs-item.qs-drag-placeholder {
-  opacity: 0.22 !important;
-  transform: scale(0.92) !important;
-  background-color: rgba(255, 255, 255, 0.06) !important;
-  border: 1px dashed rgba(255, 255, 255, 0.35);
+  opacity: 0.18 !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px dashed rgba(255, 255, 255, 0.35);
 }
 
-#custom-quick-shortcuts-bar.qs-is-dragging .qs-item:not(.qs-drag-placeholder) {
+#custom-quick-shortcuts-bar.qs-is-dragging .qs-item {
   cursor: grabbing !important;
+}
+
+#custom-quick-shortcuts-bar.qs-is-dragging .qs-item:hover {
+  background-color: transparent !important;
 }
 
 .qs-drag-ghost {
   cursor: grabbing !important;
+  will-change: transform;
 }
 
 .qs-icon-circle {

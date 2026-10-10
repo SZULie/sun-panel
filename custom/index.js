@@ -5,17 +5,50 @@
   // 0. Pinyin & Keyword Fuzzy Search Engine
   window.__matchSearch = function(item, query) {
     if (!query) return true;
-    var q = query.trim().toLowerCase();
-    if (!q) return true;
+    var qRaw = String(query).trim().toLowerCase();
+    if (!qRaw) return true;
+
+    // Normalize Windows IME apostrophes and common dividers (e.g. yin'yue -> yinyue, x'c -> xc)
+    var qClean = qRaw.replace(/[\x27\u2019\u2018\s_\-]+/g, "");
 
     var fields = [item.title, item.description, item.url, item.lanUrl];
+    var fieldStrs = [];
     for (var i = 0; i < fields.length; i++) {
-      var f = fields[i];
-      if (!f) continue;
-      var str = String(f);
-      if (str.toLowerCase().indexOf(q) !== -1) return true;
-      if (window.PinyinMatch && window.PinyinMatch.match(str, q)) return true;
+      if (fields[i]) fieldStrs.push(String(fields[i]));
     }
+
+    // 1. Match full query or clean query against item fields
+    for (var i = 0; i < fieldStrs.length; i++) {
+      var str = fieldStrs[i];
+      var strLower = str.toLowerCase();
+      if (strLower.indexOf(qRaw) !== -1) return true;
+      if (qClean && strLower.indexOf(qClean) !== -1) return true;
+
+      if (window.PinyinMatch) {
+        if (window.PinyinMatch.match(str, qRaw)) return true;
+        if (qClean && window.PinyinMatch.match(str, qClean)) return true;
+      }
+    }
+
+    // 2. Multi-token search (e.g. "navi yy" or "yin yue")
+    var tokens = qRaw.split(/\s+/).filter(Boolean);
+    if (tokens.length > 1) {
+      var allTokensMatch = tokens.every(function(token) {
+        var tokClean = token.replace(/[\x27\u2019\u2018_\-]+/g, "");
+        return fieldStrs.some(function(str) {
+          var strLower = str.toLowerCase();
+          if (strLower.indexOf(token) !== -1) return true;
+          if (tokClean && strLower.indexOf(tokClean) !== -1) return true;
+          if (window.PinyinMatch) {
+            if (window.PinyinMatch.match(str, token)) return true;
+            if (tokClean && window.PinyinMatch.match(str, tokClean)) return true;
+          }
+          return false;
+        });
+      });
+      if (allTokensMatch) return true;
+    }
+
     return false;
   };
 
@@ -141,6 +174,16 @@
   }
 
   let currentShortcuts = getLocalShortcuts();
+  let syncStarted = false;
+  let syncRequestId = 0;
+
+  function scheduleShortcutSync() {
+    const requestId = ++syncRequestId;
+    if (getAuthToken()) return;
+    window.setTimeout(() => {
+      if (requestId === syncRequestId && getAuthToken()) syncCloudShortcuts();
+    }, 180);
+  }
 
   async function syncCloudShortcuts() {
     try {
@@ -156,7 +199,9 @@
       const json = await res.json();
       if (json.code === 0 && json.data && json.data.panel) {
         cachedPanelConfig = json.data.panel;
-        if (Array.isArray(json.data.panel.quickShortcuts) && json.data.panel.quickShortcuts.length > 0) {
+        // Preserve local state for visitors. For a signed-in account, cloud state
+        // is authoritative even when the saved shortcut array is empty.
+        if (token && Array.isArray(json.data.panel.quickShortcuts)) {
           currentShortcuts = json.data.panel.quickShortcuts;
           localStorage.setItem('SUN_PANEL_QUICK_SHORTCUTS', JSON.stringify(currentShortcuts));
           renderQuickShortcutsBar();
@@ -184,11 +229,13 @@
         const panel = jsonGet.data.panel;
         panel.quickShortcuts = currentShortcuts;
         cachedPanelConfig = panel;
-        await fetch('/api/panel/userConfig/set', {
+        const resSet = await fetch('/api/panel/userConfig/set', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'token': token },
           body: JSON.stringify({ panel: panel })
         });
+        const jsonSet = await resSet.json();
+        if (jsonSet.code !== 0) throw new Error(jsonSet.msg || '保存账号配置失败');
       }
     } catch(e) {
       console.error('Failed to sync shortcuts to cloud:', e);
@@ -308,20 +355,32 @@
       if (e.button !== 0 && e.pointerType === 'mouse') return;
       if (e.target.closest('.qs-action-badges')) return;
       if (itemEl.classList.contains('qs-add-btn')) return;
-
+      // In view mode preserve ordinary taps, context menus, and native scrolling.
+      if (e.pointerType === 'touch' && !document.body.classList.contains('edit-mode')) return;
       const startX = e.clientX;
       const startY = e.clientY;
-      const initialRect = itemEl.getBoundingClientRect();
-      const offsetX = startX - initialRect.left;
-      const offsetY = startY - initialRect.top;
+      let initialRect = itemEl.getBoundingClientRect();
+      let offsetX = startX - initialRect.left;
+      let offsetY = startY - initialRect.top;
 
       let dragActivated = false;
       let longPressTimer = null;
-
-      const activateDrag = () => {
+      let pointerId = e.pointerId;
+      let lastX = startX;
+      let lastY = startY;
+      let rafId = 0;
+      let pendingPoint = null;
+      let capturedItem = false;
+      const activateDrag = (pointX = lastX, pointY = lastY) => {
         if (dragActivated) return;
         dragActivated = true;
         clearTimeout(longPressTimer);
+        initialRect = itemEl.getBoundingClientRect();
+        offsetX = Math.min(initialRect.width, Math.max(0, initialRect.right - pointX));
+        offsetY = initialRect.height / 2;
+        if (e.pointerType === 'touch' && !capturedItem) {
+          try { itemEl.setPointerCapture(pointerId); capturedItem = true; } catch (err) {}
+        }
 
         if (navigator.vibrate) {
           try { navigator.vibrate(25); } catch(err){}
@@ -371,9 +430,7 @@
         bar.classList.add('qs-is-dragging');
 
         items.forEach(el => {
-          if (el !== itemEl) {
-            el.style.transition = 'transform 260ms cubic-bezier(0.2, 0, 0, 1)';
-          }
+          el.style.transition = 'transform 260ms cubic-bezier(0.2, 0, 0, 1)';
         });
 
         qsDragState = {
@@ -388,59 +445,91 @@
         };
       };
 
-      longPressTimer = setTimeout(activateDrag, 220);
+      // Touch drag activates after a brief stable hold; movement afterwards is captured.
+      if (e.pointerType === 'touch') longPressTimer = setTimeout(() => activateDrag(lastX, lastY), 320);
 
       const onPointerMove = (moveEv) => {
-        const dx = moveEv.clientX - startX;
-        const dy = moveEv.clientY - startY;
+        if (pointerId != null && moveEv.pointerId !== pointerId) return;
+        const previousX = lastX;
+        const previousY = lastY;
+        lastX = moveEv.clientX;
+        lastY = moveEv.clientY;
+        const dx = lastX - startX;
+        const dy = lastY - startY;
         const dist = Math.hypot(dx, dy);
 
         if (!dragActivated && moveEv.pointerType === 'mouse' && dist > 5) {
-          activateDrag();
-        } else if (!dragActivated && dist > 14) {
+          activateDrag(lastX, lastY);
+        } else if (!dragActivated && moveEv.pointerType === 'touch' && dist > 10) {
+          // Before the long-press threshold, yield the gesture to vertical page
+          // scrolling. With touch-action:none this is implemented explicitly so
+          // vertical swipes keep working without the browser cancelling reorder.
           clearTimeout(longPressTimer);
-          cleanupListeners();
+          itemEl.__suppressClickUntil = Date.now() + 450;
+          const scroller = document.querySelector('.scroll-container');
+          if (scroller) scroller.scrollTop -= lastY - previousY;
+          else window.scrollBy(0, previousY - lastY);
+          if (moveEv.cancelable) moveEv.preventDefault();
           return;
         }
 
         if (!dragActivated || !qsDragState) return;
-        moveEv.preventDefault();
+        if (moveEv.cancelable) moveEv.preventDefault();
+        if (moveEv.pointerType === 'touch' && !capturedItem) {
+          try { itemEl.setPointerCapture(pointerId); capturedItem = true; } catch (err) {}
+        }
+        const scrollBox = document.querySelector('.scroll-container');
+        if (scrollBox) {
+          const edge = 72;
+          const rect = scrollBox.getBoundingClientRect();
+          if (lastY < rect.top + edge) scrollBox.scrollTop -= Math.ceil((rect.top + edge - lastY) / 6);
+          else if (lastY > rect.bottom - edge) scrollBox.scrollTop += Math.ceil((lastY - (rect.bottom - edge)) / 6);
+        }
+
+        // Coalesce high-frequency touch/mouse moves into a single paint update.
+        pendingPoint = { x: lastX, y: lastY };
+        if (rafId) return;
+        rafId = requestAnimationFrame(() => {
+          rafId = 0;
+          if (!pendingPoint || !qsDragState) return;
+          const point = pendingPoint;
+          pendingPoint = null;
 
         // 1. Move ghost smoothly with pointer
-        const gx = moveEv.clientX - qsDragState.offsetX;
-        const gy = moveEv.clientY - qsDragState.offsetY;
+        const gx = point.x - qsDragState.offsetX;
+        const gy = point.y - qsDragState.offsetY;
         qsDragState.ghost.style.transform = `translate3d(${gx}px, ${gy}px, 0) scale(1.15)`;
 
-        // 2. 2D Euclidean Distance + Hysteresis deadzone to find virtual target slot
+        // 2. Strict True Hysteresis 2D Deadzone (Zero Twitching / Jitter)
+        // Using ghost visual center (gx + width/2, gy + height/2) instead of raw pointer
         const { itemLayouts, startIndex, currentIndex } = qsDragState;
-        const curPointerX = moveEv.clientX;
-        const curPointerY = moveEv.clientY;
+        const ghostCenterX = gx + initialRect.width / 2;
+        const ghostCenterY = gy + initialRect.height / 2;
 
-        // Current slot center
         const curCenter = itemLayouts[currentIndex];
-        const distToCurrent = Math.hypot(curPointerX - curCenter.centerX, curPointerY - curCenter.centerY);
-
-        // Hysteresis threshold: requires moving beyond 55% of card radius to switch
-        const switchThreshold = Math.min(curCenter.width, curCenter.height) * 0.55;
+        const distToCurrent = Math.hypot(ghostCenterX - curCenter.centerX, ghostCenterY - curCenter.centerY);
 
         let targetIndex = currentIndex;
-        if (distToCurrent > switchThreshold) {
-          let closestIdx = currentIndex;
-          let minDistance = Infinity;
+        let bestDistance = distToCurrent;
 
-          for (let i = 0; i < itemLayouts.length; i++) {
-            const layout = itemLayouts[i];
-            const d = Math.hypot(curPointerX - layout.centerX, curPointerY - layout.centerY);
-            if (d < minDistance) {
-              minDistance = d;
-              closestIdx = i;
-            }
+        // Candidate slot must be substantially closer than current slot to overcome physical hysteresis
+        for (let i = 0; i < itemLayouts.length; i++) {
+          if (i === currentIndex) continue;
+          const layout = itemLayouts[i];
+          const d = Math.hypot(ghostCenterX - layout.centerX, ghostCenterY - layout.centerY);
+          if (d < bestDistance * 0.65) {
+            bestDistance = d;
+            targetIndex = i;
           }
-          targetIndex = closestIdx;
         }
 
         if (targetIndex !== qsDragState.currentIndex) {
           qsDragState.currentIndex = targetIndex;
+
+          // Move placeholder to the newly active virtual slot!
+          const placeholderSlot = itemLayouts[targetIndex];
+          const origSlot = itemLayouts[startIndex];
+          itemEl.style.transform = `translate3d(${placeholderSlot.left - origSlot.left}px, ${placeholderSlot.top - origSlot.top}px, 0)`;
 
           // 3. Shift items in 2D space based on virtual target slot
           qsDragState.items.forEach((el, i) => {
@@ -468,14 +557,32 @@
             }
           });
         }
+        });
       };
 
-      const onPointerUpOrCancel = async () => {
+      const onPointerUpOrCancel = async (upEv) => {
+        if (upEv && pointerId != null && upEv.pointerId !== pointerId) return;
         clearTimeout(longPressTimer);
         cleanupListeners();
+        if (capturedItem) {
+          try { if (itemEl.hasPointerCapture(pointerId)) itemEl.releasePointerCapture(pointerId); } catch (err) {}
+          capturedItem = false;
+        }
+        if (capturedItem) {
+          try { if (itemEl.hasPointerCapture(pointerId)) itemEl.releasePointerCapture(pointerId); } catch (err) {}
+          capturedItem = false;
+        }
+        if (upEv?.type === 'pointercancel' && !dragActivated) {
+          itemEl.__suppressClickUntil = Date.now() + 300;
+        }
 
+        // On touch-action:none browsers retain the pointer for custom gestures.
+        // If cancelled by OS/browser interruption, settle the drag at its last slot.
         if (dragActivated && qsDragState) {
-          const { ghost, items, startIndex, currentIndex, itemLayouts } = qsDragState;
+          // Keep final coordinates and the moved item associated with this gesture;
+          // a second render must not let an older timer commit a stale drag.
+          const dragState = qsDragState;
+          const { ghost, items, startIndex, currentIndex, itemLayouts } = dragState;
           const targetLayout = itemLayouts[currentIndex];
 
           // Smooth snap animation of ghost into exact 2D target slot
@@ -494,12 +601,15 @@
 
             // If order changed, update array, re-render and persist cloud
             if (currentIndex !== startIndex) {
-              const movedItem = currentShortcuts.splice(startIndex, 1)[0];
-              currentShortcuts.splice(currentIndex, 0, movedItem);
-
-              renderQuickShortcutsBar();
-              saveCloudShortcuts(currentShortcuts);
-              showToast('快捷方式顺序已保存');
+              const movedItem = currentShortcuts.find(item => item.id === dragState.itemEl.dataset.qsId);
+              const currentStartIndex = currentShortcuts.indexOf(movedItem);
+              if (movedItem && currentStartIndex !== -1) {
+                currentShortcuts.splice(currentStartIndex, 1);
+                currentShortcuts.splice(Math.min(currentIndex, currentShortcuts.length), 0, movedItem);
+                renderQuickShortcutsBar();
+                saveCloudShortcuts(currentShortcuts);
+                showToast('快捷方式顺序已保存');
+              }
             }
           }, 200);
 
@@ -512,11 +622,15 @@
         window.removeEventListener('pointermove', onPointerMove, { passive: false });
         window.removeEventListener('pointerup', onPointerUpOrCancel);
         window.removeEventListener('pointercancel', onPointerUpOrCancel);
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = 0;
+        pendingPoint = null;
       }
 
       window.addEventListener('pointermove', onPointerMove, { passive: false });
       window.addEventListener('pointerup', onPointerUpOrCancel);
       window.addEventListener('pointercancel', onPointerUpOrCancel);
+      window.addEventListener('blur', onPointerUpOrCancel, { once: true });
     });
   }
 
@@ -632,29 +746,32 @@
     if (searchInput && !searchInput.__pinyinBound) {
       searchInput.__pinyinBound = true;
 
-      const triggerSearch = () => {
-        if (typeof window.__triggerSunPanelSearch === 'function') {
-          window.__triggerSunPanelSearch(searchInput.value);
-        }
-      };
-
-      searchInput.addEventListener('input', triggerSearch);
-      searchInput.addEventListener('keyup', (e) => {
-        if (e.key === 'Escape') {
-          searchInput.value = '';
-          triggerSearch();
-          searchInput.blur();
-        } else if (e.key === 'Enter') {
-          // If user presses Enter and exactly 1 card or match is found, open it smoothly
-          const visibleCards = Array.from(document.querySelectorAll('.item-card-container'));
-          if (visibleCards.length === 1) {
-            visibleCards[0].click();
+      const searchFromNativeInput = () => {
+        // Dispatch after Vue updates its model; otherwise our later DOM listener can
+        // call the search callback with the new value and then Vue's stale value wins.
+        requestAnimationFrame(() => {
+          if (typeof window.__triggerSunPanelSearch === 'function') {
+            window.__triggerSunPanelSearch(searchInput.value);
           }
-        } else {
-          triggerSearch();
+        });
+      };
+      searchInput.addEventListener('input', searchFromNativeInput);
+      searchInput.addEventListener('change', searchFromNativeInput);
+      searchInput.addEventListener('compositionend', searchFromNativeInput);
+      searchInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          searchInput.value = '';
+          searchFromNativeInput();
+          searchInput.blur();
+        } else if (event.key === 'Enter') {
+          searchFromNativeInput();
+          requestAnimationFrame(() => {
+            const visibleCards = Array.from(document.querySelectorAll('.item-card-container'))
+              .filter(card => card.getClientRects().length > 0);
+            if (visibleCards.length === 1) visibleCards[0].click();
+          });
         }
       });
-      searchInput.addEventListener('compositionend', triggerSearch);
     }
   }
 
@@ -924,12 +1041,13 @@
     injectModeToggle();
     bindSearchInputFallback();
 
+    if (!syncStarted && document.querySelector('.search-box')) {
+      syncStarted = true;
+      syncCloudShortcuts();
+    }
+
     if (!document.getElementById('custom-quick-shortcuts-bar') && document.querySelector('.search-box')) {
       renderQuickShortcutsBar();
-      if (!hasSyncedCloud) {
-        hasSyncedCloud = true;
-        syncCloudShortcuts();
-      }
     }
 
     const groupDivs = document.querySelectorAll('div[id^="item-group-"]');
