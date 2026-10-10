@@ -357,6 +357,7 @@
       if (itemEl.classList.contains('qs-add-btn')) return;
       // In view mode preserve ordinary taps, context menus, and native scrolling.
       if (e.pointerType === 'touch' && !document.body.classList.contains('edit-mode')) return;
+      let capturedItem = false;
       const startX = e.clientX;
       const startY = e.clientY;
       let initialRect = itemEl.getBoundingClientRect();
@@ -370,7 +371,6 @@
       let lastY = startY;
       let rafId = 0;
       let pendingPoint = null;
-      let capturedItem = false;
       const activateDrag = (pointX = lastX, pointY = lastY) => {
         if (dragActivated) return;
         dragActivated = true;
@@ -461,16 +461,24 @@
         if (!dragActivated && moveEv.pointerType === 'mouse' && dist > 5) {
           activateDrag(lastX, lastY);
         } else if (!dragActivated && moveEv.pointerType === 'touch' && dist > 10) {
-          // Before the long-press threshold, yield the gesture to vertical page
-          // scrolling. With touch-action:none this is implemented explicitly so
-          // vertical swipes keep working without the browser cancelling reorder.
-          clearTimeout(longPressTimer);
-          itemEl.__suppressClickUntil = Date.now() + 450;
-          const scroller = document.querySelector('.scroll-container');
-          if (scroller) scroller.scrollTop -= lastY - previousY;
-          else window.scrollBy(0, previousY - lastY);
-          if (moveEv.cancelable) moveEv.preventDefault();
-          return;
+          if (!longPressTimer) {
+            // The long-press was already cancelled, so this is a native scroll.
+            const scroller = document.querySelector('.scroll-container');
+            if (scroller) scroller.scrollTop -= lastY - previousY;
+            else window.scrollBy(0, previousY - lastY);
+            if (moveEv.cancelable) moveEv.preventDefault();
+            return;
+          }
+          if (Math.abs(dy) > Math.abs(dx) * 1.2) {
+            // Vertical intent cancels reorder and yields control to page scroll.
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+            const scroller = document.querySelector('.scroll-container');
+            if (scroller) scroller.scrollTop -= lastY - previousY;
+            else window.scrollBy(0, previousY - lastY);
+            if (moveEv.cancelable) moveEv.preventDefault();
+            return;
+          }
         }
 
         if (!dragActivated || !qsDragState) return;
