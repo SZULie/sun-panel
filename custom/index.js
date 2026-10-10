@@ -543,7 +543,7 @@
           itemEl.style.transform = `translate3d(${placeholderSlot.left - origSlot.left}px, ${placeholderSlot.top - origSlot.top}px, 0)`;
 
           // 3. Shift items in 2D space based on virtual target slot
-          qsDragState.items.forEach((el, i) => {
+          qsDragState.geometryItems.forEach((el, i) => {
             if (el === itemEl) return;
 
             let shiftedSlotIdx = i;
