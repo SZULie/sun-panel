@@ -355,9 +355,6 @@
       if (e.button !== 0 && e.pointerType === 'mouse') return;
       if (e.target.closest('.qs-action-badges')) return;
       if (itemEl.classList.contains('qs-add-btn')) return;
-      // View mode leaves normal taps and vertical movement to the browser; the
-      // same held gesture is reserved for reorder only in explicit Edit mode.
-      if (e.pointerType === 'touch' && !document.body.classList.contains('edit-mode')) return;
       let capturedItem = false;
       const startX = e.clientX;
       const startY = e.clientY;
@@ -370,15 +367,13 @@
       let pointerId = e.pointerId;
       let lastX = startX;
       let lastY = startY;
+      let scrollGesture = false;
       let rafId = 0;
       let pendingPoint = null;
-      // touch-action:none is needed to keep the pointer alive through a long press;
-      // manually hand vertical gestures to the app scroller below until drag starts.
-      if (e.pointerType === 'touch' && e.cancelable) e.preventDefault();
-      try { itemEl.setPointerCapture(pointerId); } catch (err) {}
       const activateDrag = (pointX = lastX, pointY = lastY) => {
         if (dragActivated) return;
         dragActivated = true;
+        document.body.classList.add('qs-touch-dragging');
         clearTimeout(longPressTimer);
         initialRect = itemEl.getBoundingClientRect();
         offsetX = Math.min(initialRect.width, Math.max(0, initialRect.right - pointX));
@@ -453,9 +448,6 @@
         };
       };
 
-      // Touch drag activates after a brief stable hold; movement afterwards is captured.
-      if (e.pointerType === 'touch') longPressTimer = setTimeout(() => activateDrag(lastX, lastY), 320);
-
       const onPointerMove = (moveEv) => {
         if (pointerId != null && moveEv.pointerId !== pointerId) return;
         const previousX = lastX;
@@ -466,38 +458,27 @@
         const dy = lastY - startY;
         const dist = Math.hypot(dx, dy);
 
-        // While the long-press timer is pending, route touch deltas into the
-        // application's own scroll container; touch-action:none is required for
-        // stable pointer capture after the reorder gesture activates.
-        if (!dragActivated && moveEv.pointerType === 'touch' && longPressTimer && dist > 10) {
+        if (!dragActivated && moveEv.pointerType === 'mouse' && dist > 5) {
+          activateDrag(lastX, lastY);
+        } else if (!dragActivated && moveEv.pointerType === 'touch' && dist > 12 && !scrollGesture) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+          scrollGesture = true;
+          document.body.classList.add('qs-touch-dragging');
+          itemEl.__suppressClickUntil = Date.now() + 450;
+          if (moveEv.cancelable) moveEv.preventDefault();
           const scroller = document.querySelector('.scroll-container');
           if (scroller) scroller.scrollTop -= lastY - previousY;
           else window.scrollBy(0, previousY - lastY);
-          itemEl.__suppressClickUntil = Date.now() + 450;
-          if (moveEv.cancelable) moveEv.preventDefault();
           return;
         }
-        if (!dragActivated && moveEv.pointerType === 'mouse' && dist > 5) {
-          activateDrag(lastX, lastY);
-        } else if (!dragActivated && moveEv.pointerType === 'touch' && dist > 10) {
-          if (!longPressTimer) {
-            // The long-press was already cancelled, so this is a native scroll.
-            const scroller = document.querySelector('.scroll-container');
-            if (scroller) scroller.scrollTop -= lastY - previousY;
-            else window.scrollBy(0, previousY - lastY);
-            if (moveEv.cancelable) moveEv.preventDefault();
-            return;
-          }
-          if (Math.abs(dy) > Math.abs(dx) * 1.2) {
-            // Keep the long-press armed for minor finger drift, but start native
-            // container scrolling and suppress accidental click navigation.
-            itemEl.__suppressClickUntil = Date.now() + 450;
-            const scroller = document.querySelector('.scroll-container');
-            if (scroller) scroller.scrollTop -= lastY - previousY;
-            else window.scrollBy(0, previousY - lastY);
-            if (moveEv.cancelable) moveEv.preventDefault();
-            return;
-          }
+
+        if (scrollGesture) {
+          if (moveEv.cancelable) moveEv.preventDefault();
+          const scroller = document.querySelector('.scroll-container');
+          if (scroller) scroller.scrollTop -= lastY - previousY;
+          else window.scrollBy(0, previousY - lastY);
+          return;
         }
 
         if (!dragActivated || !qsDragState) return;
@@ -591,6 +572,7 @@
         if (upEv && pointerId != null && upEv.pointerId !== pointerId) return;
         clearTimeout(longPressTimer);
         cleanupListeners();
+        document.body.classList.remove('qs-touch-dragging');
         if (capturedItem) {
           try { if (itemEl.hasPointerCapture(pointerId)) itemEl.releasePointerCapture(pointerId); } catch (err) {}
           capturedItem = false;
@@ -645,18 +627,208 @@
         window.removeEventListener('pointermove', onPointerMove, { passive: false });
         window.removeEventListener('pointerup', onPointerUpOrCancel);
         window.removeEventListener('pointercancel', onPointerUpOrCancel);
+        document.body.classList.remove('qs-touch-dragging');
         if (rafId) cancelAnimationFrame(rafId);
         rafId = 0;
         pendingPoint = null;
       }
 
-      window.addEventListener('pointermove', onPointerMove, { passive: false });
-      // Pointer Events do not perform native page scrolling when touch-action is
-      // none; handle vertical movement before a long press on a non-passive path.
-      window.addEventListener('pointerup', onPointerUpOrCancel);
-      window.addEventListener('pointercancel', onPointerUpOrCancel);
-      window.addEventListener('blur', onPointerUpOrCancel, { once: true });
+      if (getAuthToken()) {
+        if (e.pointerType === 'touch') {
+          try { itemEl.setPointerCapture(pointerId); capturedItem = true; } catch (err) {}
+          longPressTimer = setTimeout(() => {
+            longPressTimer = null;
+            if (!dragActivated) document.body.classList.add('qs-touch-dragging');
+            activateDrag(lastX, lastY);
+          }, 320);
+        }
+        window.addEventListener('pointermove', onPointerMove, { passive: false });
+        window.addEventListener('pointerup', onPointerUpOrCancel);
+        window.addEventListener('pointercancel', onPointerUpOrCancel);
+        window.addEventListener('blur', onPointerUpOrCancel, { once: true });
+      }
     });
+  }
+
+  function getItemCardFromTarget(target) {
+    const card = target.closest('.item-card-container');
+    return card?.parentElement?.id.startsWith('item-card-name-') ? card.parentElement : null;
+  }
+
+  function visibleServiceCardWrappers(list) {
+    return [...list.children].filter(el => /^item-card-name-/.test(el.id));
+  }
+
+  function startServiceCardDrag(state) {
+    if (!state || state.dragging) return;
+    state.dragging = true;
+    state.layouts = state.items.map(el => el.getBoundingClientRect());
+    if (state.pointerType === 'touch') {
+      try { state.card.setPointerCapture(state.pointerId); } catch (error) {}
+      document.body.classList.add('sp-card-dragging');
+      document.body.classList.remove('sp-card-pending-touch');
+    }
+    state.placeholder = state.card.cloneNode(false);
+    state.placeholder.className = 'sp-card-sort-placeholder';
+    state.placeholder.style.width = `${state.cardRect.width}px`;
+    state.placeholder.style.height = `${state.cardRect.height}px`;
+    state.list.insertBefore(state.placeholder, state.card.nextSibling);
+    state.ghost = state.card.cloneNode(true);
+    state.ghost.classList.add('sp-card-sort-ghost');
+    state.ghost.style.cssText += `;position:fixed;left:0;top:0;width:${state.cardRect.width}px;height:${state.cardRect.height}px;z-index:999999;pointer-events:none;transform:translate3d(${state.cardRect.left}px,${state.cardRect.top}px,0);`;
+    document.body.appendChild(state.ghost);
+    state.ghost.style.transform = `translate3d(${state.lastPoint.x - state.offsetX}px,${state.lastPoint.y - state.offsetY}px,0)`;
+    state.card.classList.add('sp-card-sort-source');
+    state.list.classList.add('sp-card-sorting');
+    if (navigator.vibrate) navigator.vibrate(20);
+  }
+
+  function settleServiceCardDrag(current) {
+    if (!current.dragging) return;
+    try { if (current.card.hasPointerCapture(current.pointerId)) current.card.releasePointerCapture(current.pointerId); } catch (error) {}
+    current.ghost.remove();
+    current.placeholder.remove();
+    current.list.classList.remove('sp-card-sorting');
+    document.body.classList.remove('sp-card-dragging');
+    current.items.forEach(el => {
+      el.style.transform = '';
+      el.style.transition = '';
+      el.querySelectorAll('.item-card-container').forEach(card => { card.style.pointerEvents = ''; });
+    });
+    document.body.classList.remove('sp-card-pending-touch');
+    if (current.index === current.startIndex) return;
+    const ordered = [...current.items];
+    ordered.splice(current.startIndex, 1);
+    ordered.splice(Math.min(current.index, ordered.length), 0, current.card);
+    ordered.forEach(el => current.list.appendChild(el));
+    const sortItems = ordered.map((el, index) => ({ id: Number(el.dataset.spCardId), sort: index + 1 }));
+    fetch('/api/panel/itemIcon/saveSort', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', token: current.token },
+      body: JSON.stringify({ itemIconGroupId: current.groupId, sortItems })
+    }).then(r => r.json()).then(result => {
+      if (result.code !== 0) throw new Error(result.msg || 'save sort failed');
+      showToast('服务卡片顺序已保存');
+    }).catch(error => {
+      console.error('Save service-card order failed:', error);
+      showToast('保存失败，正在恢复原顺序');
+      current.originalOrder.forEach(el => current.list.appendChild(el));
+    });
+  }
+
+  function initServiceCardReorder() {
+    if (!getAuthToken()) return;
+    document.body.classList.add('sp-card-sort-ready');
+    if (document.body.__sunPanelCardReorderBound) return;
+    document.body.__sunPanelCardReorderBound = true;
+
+    let state = null;
+    const cleanup = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onEnd);
+      window.removeEventListener('pointercancel', onEnd);
+    };
+    const onEnd = event => {
+      if (!state || event.pointerId !== state.pointerId) return;
+      const current = state;
+      state = null;
+      clearTimeout(current.timer);
+      cleanup();
+      document.body.classList.remove('sp-card-pending-touch', 'sp-card-scroll-gesture');
+      settleServiceCardDrag(current);
+    };
+
+    const onMove = (event) => {
+      if (!state || event.pointerId !== state.pointerId) return;
+      const s = state;
+      const previousPoint = s.lastPoint;
+      s.lastPoint = { x: event.clientX, y: event.clientY };
+      const dx = event.clientX - s.startX;
+      const dy = event.clientY - s.startY;
+      if (event.pointerType === 'touch' && !s.dragging && !s.scrollGesture && Math.hypot(dx, dy) > 12) {
+        clearTimeout(s.timer);
+        s.timer = null;
+        s.scrollGesture = true;
+        s.card.__suppressClickUntil = Date.now() + 450;
+      }
+      if (s.scrollGesture) {
+        const scroller = document.querySelector('.scroll-container');
+        if (scroller) scroller.scrollTop -= event.clientY - previousPoint.y;
+        else window.scrollBy(0, previousPoint.y - event.clientY);
+        if (event.cancelable) event.preventDefault();
+        return;
+      }
+      if (!s.dragging && s.pointerType === 'mouse' && Math.hypot(dx, dy) > 5 && document.body.classList.contains('edit-mode')) startServiceCardDrag(s);
+      if (!s.dragging) return;
+      if (event.cancelable) event.preventDefault();
+      s.ghost.style.transform = `translate3d(${event.clientX - s.offsetX}px, ${event.clientY - s.offsetY}px, 0) scale(1.04)`;
+
+      const slotIndex = s.layouts
+        .map((rect, index) => ({ index, distance: Math.hypot(event.clientX - (rect.left + rect.width / 2), event.clientY - (rect.top + rect.height / 2)) }))
+        .filter(slot => slot.index !== s.index)
+        .sort((a, b) => a.distance - b.distance)[0]?.index;
+      if (slotIndex == null || slotIndex === s.index) return;
+      s.index = slotIndex;
+      const ref = s.items[slotIndex + (slotIndex < s.startIndex ? 1 : 0)] || null;
+      s.list.insertBefore(s.placeholder, ref);
+      if (!s.pointerDisabled) {
+        s.list.querySelectorAll('.item-card-container').forEach(el => { el.style.pointerEvents = 'none'; });
+        s.pointerDisabled = true;
+      }
+      const slot = s.placeholder.getBoundingClientRect();
+      s.card.style.transform = `translate3d(${slot.left - s.cardRect.left}px, ${slot.top - s.cardRect.top}px, 0)`;
+      s.items.forEach((el, index) => {
+        if (el === s.card) return;
+        const from = s.layouts[index];
+        const to = s.layouts[index < s.startIndex ? index + 1 : index - 1];
+        el.style.transition = 'transform 180ms ease-out';
+        el.style.transform = index >= Math.min(s.startIndex, s.index) && index <= Math.max(s.startIndex, s.index)
+          ? `translate3d(${to.left - from.left}px, ${to.top - from.top}px, 0)`
+          : '';
+      });
+    };
+
+    document.addEventListener('pointerdown', event => {
+      if (!getAuthToken()) return;
+      if (event.target.closest('.sp-card-sort-ghost, .sp-card-sort-placeholder')) return;
+      if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return;
+      if (event.target.closest('button, a, input, textarea, select, .n-dropdown, .qs-action-badges')) return;
+      const wrapper = getItemCardFromTarget(event.target);
+      const list = wrapper?.parentElement;
+      const group = wrapper?.closest('.item-list');
+      if (!wrapper || !list || !group || !['icon-info-box', 'icon-small-box'].some(c => list.classList.contains(c))) return;
+      if (event.pointerType === 'mouse' && !document.body.classList.contains('edit-mode')) return;
+      const groupIndex = Number(group.className.match(/item-group-index-(\d+)/)?.[1]);
+      const saved = window.__sunPanelSortGroups?.[groupIndex];
+      if (!saved?.id) return;
+      const cardRect = wrapper.getBoundingClientRect();
+      const token = getAuthToken();
+      if (!token) return;
+      const groupData = saved.itemInfos || [];
+      const items = visibleServiceCardWrappers(list);
+      if (items.length !== groupData.length) return;
+      const itemsByTitle = new Map(groupData.map(item => [item.title, item]));
+      for (const el of items) {
+        const title = el.querySelector('.item-card-container')?.innerText.split('\n')[0].trim();
+        const item = itemsByTitle.get(title);
+        if (!item) return;
+        el.dataset.spCardId = item.id;
+      }
+      const startIndex = items.indexOf(wrapper);
+      if (startIndex < 0 || items.length < 2 || items.some(el => !Number.isFinite(Number(el.dataset.spCardId)))) return;
+      state = {
+        pointerId: event.pointerId, pointerType: event.pointerType, token,
+        groupId: saved.id, groupIndex, list, card: wrapper, cardRect,
+        items, originalOrder: [...items], startIndex, index: startIndex, lastPoint: { x: event.clientX, y: event.clientY },
+        startX: event.clientX, startY: event.clientY,
+        offsetX: event.clientX - cardRect.left, offsetY: event.clientY - cardRect.top,
+        dragging: false, scrollGesture: false, timer: null, ghost: null, placeholder: null
+      };
+      window.addEventListener('pointermove', onMove, { passive: false });
+      window.addEventListener('pointerup', onEnd);
+      window.addEventListener('pointercancel', onEnd);
+      if (event.pointerType === 'touch') state.timer = setTimeout(() => startServiceCardDrag(state), 320);
+    }, { passive: true });
   }
 
   function renderQuickShortcutsBar() {
@@ -674,6 +846,8 @@
     if (bar.classList.contains('qs-is-dragging')) return;
 
     bar.innerHTML = '';
+    const canReorder = !!getAuthToken();
+    document.body.classList.toggle('qs-touch-sort-ready', canReorder);
 
     currentShortcuts.forEach((sc, idx) => {
       const itemEl = document.createElement('div');
@@ -690,8 +864,7 @@
         <div class="qs-title">${sc.title}</div>
       `;
 
-      // Attach Chrome-style pointer drag-and-drop
-      initShortcutPointerDrag(itemEl, bar);
+      if (canReorder) initShortcutPointerDrag(itemEl, bar);
 
       // Click handler
       itemEl.onclick = (e) => {
@@ -1062,13 +1235,47 @@
 
   let hasSyncedCloud = false;
 
+  async function syncCardGroupIds() {
+    const token = getAuthToken();
+    if (!token) return;
+    try {
+      const groupsResponse = await fetch('/api/panel/itemIconGroup/getList', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', token }, body: '{}'
+      });
+      const groups = await groupsResponse.json();
+      if (groups.code !== 0 || !Array.isArray(groups.data?.list)) return false;
+      const metadata = await Promise.all(groups.data.list.map(async group => {
+        const response = await fetch('/api/panel/itemIcon/getListByGroupId', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', token },
+          body: JSON.stringify({ itemIconGroupId: group.id })
+        });
+        const result = await response.json();
+        return { ...group, itemInfos: result.code === 0 ? result.data?.list || [] : [] };
+      }));
+      if (metadata.some(group => !group.id || !group.itemInfos.length)) return false;
+      window.__sunPanelSortGroups = metadata;
+      return true;
+    } catch (error) {
+      console.error('Could not load card order metadata:', error);
+      return false;
+    }
+  }
+
   function injectEditButtons() {
     injectModeToggle();
     bindSearchInputFallback();
+    initServiceCardReorder();
 
     if (!syncStarted && document.querySelector('.search-box')) {
       syncStarted = true;
       syncCloudShortcuts();
+    }
+    if (getAuthToken() && !window.__sunPanelSortGroups?.length && !window.__sunPanelSortGroupsLoading) {
+      window.__sunPanelSortGroupsLoading = true;
+      syncCardGroupIds().then(success => {
+        window.__sunPanelSortGroupsLoading = false;
+        if (success) initServiceCardReorder();
+      });
     }
 
     if (!document.getElementById('custom-quick-shortcuts-bar') && document.querySelector('.search-box')) {

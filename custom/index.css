@@ -78,6 +78,47 @@ body.edit-mode .group-buttons:hover {
   z-index: 10;
 }
 
+.sp-card-sorting {
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none !important;
+}
+
+body.qs-touch-sort-ready #custom-quick-shortcuts-bar .qs-item {
+  touch-action: none;
+}
+
+body.sp-card-dragging,
+body.sp-card-dragging *,
+body.sp-card-sorting,
+body.sp-card-sorting *,
+body.sp-card-sorting,
+body.sp-card-sorting * {
+  touch-action: none !important;
+}
+
+body.sp-card-sort-ready .icon-info-box > [id^="item-card-name-"],
+body.sp-card-sort-ready .icon-small-box > [id^="item-card-name-"] {
+  touch-action: pan-y;
+}
+
+.sp-card-sort-source {
+  opacity: 0.15 !important;
+}
+
+.sp-card-sort-placeholder {
+  pointer-events: none !important;
+  visibility: hidden !important;
+  border: 1px dashed rgba(255, 255, 255, 0.55) !important;
+  border-radius: 12px;
+}
+
+.sp-card-sort-ghost {
+  opacity: 1 !important;
+  cursor: grabbing !important;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.42) !important;
+}
+
 #custom-quick-shortcuts-bar.qs-is-dragging {
   z-index: 1000;
 }
@@ -93,13 +134,23 @@ body.edit-mode .group-buttons:hover {
   cursor: pointer;
   transition: background-color 0.2s ease, transform 0.22s cubic-bezier(0.2, 0, 0, 1), opacity 0.2s ease;
   text-decoration: none;
-  /* View mode keeps native vertical page scrolling; edit mode captures 2D reorder gestures. */
+  /* Keep default view scrolling native; edit mode hands pointers to the drag controller. */
   touch-action: pan-y;
   -webkit-touch-callout: none;
 }
 
-body.edit-mode .qs-item {
+body.qs-touch-dragging,
+body.qs-touch-dragging * {
+  touch-action: none !important;
+}
+
+body.edit-mode #custom-quick-shortcuts-bar .qs-item {
   touch-action: none;
+}
+
+body.sp-card-dragging,
+body.sp-card-dragging * {
+  touch-action: none !important;
 }
 
 .qs-item:hover {
